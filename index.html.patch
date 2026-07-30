@@ -1,0 +1,47 @@
+// PATCH FOR index.html - Add loading states and better error handling
+// These should be applied to the corresponding functions:
+
+// 1. loadListings function - add loading state and error handling
+async function loadListings() {
+    const zone = document.getElementById('listingZone').value.trim();
+    const container = document.getElementById('listingsResults');
+    container.innerHTML = '<div class="card"><p class="muted">Loading...</p></div>';
+    try {
+        const res = await fetch('/api/parcels/listings/' + (zone ? '?zone=' + encodeURIComponent(zone) : ''), {headers: authHeaders()});
+        if (!res.ok) throw new Error('Network response was not ok');
+        const data = await res.json();
+        if (!data.results || !data.results.length) { container.innerHTML = '<div class="card">No listings available.</div>'; return; }
+        container.innerHTML = data.results.map(parcel => `...`).join('');
+    } catch (error) {
+        console.error('Error loading listings:', error);
+        container.innerHTML = `<div class="card"><p class="muted">Error: ${error.message}. Please try again.</p></div>`;
+    }
+}
+
+// 2. viewParcel function - add loading and error handling
+async function viewParcel(id) {
+    const container = document.getElementById('listingsResults');
+    container.innerHTML = '<div class="card"><p class="muted">Loading parcel details...</p></div>';
+    try {
+        const res = await fetch('/api/parcels/' + id + '/', {headers: authHeaders()});
+        if (!res.ok) throw new Error('Failed to get parcel');
+        const parcel = await res.json();
+        // ... existing rendering code
+    } catch (error) {
+        console.error('Error viewing parcel:', error);
+        container.innerHTML = `<div class="card"><p class="muted">Error: ${error.message}</p></div>`;
+    }
+}
+
+// 3. Global fetch error handler for all API calls
+async function authenticatedFetch(url, options = {}) {
+    const headers = { ...options.headers, ...(accessToken ? {'Authorization': 'Bearer ' + accessToken} : {}), 'Content-Type': 'application/json' };
+    try {
+        const res = await fetch(url, { ...options, headers });
+        if (!res.ok) throw new Error(`${res.status}: ${res.statusText}`);
+        return await res.json();
+    } catch (error) {
+        console.error('API call failed:', error);
+        throw error;
+    }
+}
