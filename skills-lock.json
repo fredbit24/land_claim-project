@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "skills": {
+    "django-drf": {
+      "source": "gentleman-programming/gentleman-skills",
+      "sourceType": "github",
+      "skillPath": "curated/django-drf/SKILL.md",
+      "computedHash": "7338453aef2f9a181e9f9bd624247163a4bc1fb48164d6802178e925e97b9aec"
+    },
+    "django-python": {
+      "source": "mindrally/skills",
+      "sourceType": "github",
+      "skillPath": "django-python/SKILL.md",
+      "computedHash": "384bd4adf0d4c6aeb76c6aa31d6dc2c65dbd1f5e828f1297fa663b1116c1f7b4"
+    },
+    "django-rest-api-development": {
+      "source": "mindrally/skills",
+      "sourceType": "github",
+      "skillPath": "django-rest-api-development/SKILL.md",
+      "computedHash": "fa9bb149144969f5eed6feb48e3fd184cd756f02e7e7ecd454d082400ca71760"
+    },
+    "git-workflow": {
+      "source": "mindrally/skills",
+      "sourceType": "github",
+      "skillPath": "git-workflow/SKILL.md",
+      "computedHash": "2d234c30b7a4ca910fe6625977b0c045529079b8b71642d9efd53341787d66e4"
+    },
+    "github-pr": {
+      "source": "gentleman-programming/gentleman-skills",
+      "sourceType": "github",
+      "skillPath": "curated/github-pr/SKILL.md",
+      "computedHash": "3cb26e27443738a1c1cecdb921571d410d428778cd0a0cf07181202dada090ab"
+    },
+    "jwt-security": {
+      "source": "mindrally/skills",
+      "sourceType": "github",
+      "skillPath": "jwt-security/SKILL.md",
+      "computedHash": "88b3f7d03223cf20e24598d231e667b13ba6bf9040fd490feafcd226356a9db1"
+    },
+    "postgis": {
+      "source": "postgis/postgis",
+      "sourceType": "github",
+      "skillPath": "doc/skills/postgis/SKILL.md",
+      "computedHash": "b9590f5ababfcd131fabeeaa08ee8200b0d73ca6cfad29f1a8bdc29005a5b300"
+    },
+    "postgresql-best-practices": {
+      "source": "mindrally/skills",
+      "sourceType": "github",
+      "skillPath": "postgresql-best-practices/SKILL.md",
+      "computedHash": "d32a9114bc974c965308108be7a41d9da4cddd037d5941b96611cce63064f7ea"
+    },
+    "pytest": {
+      "source": "gentleman-programming/gentleman-skills",
+      "sourceType": "github",
+      "skillPath": "curated/pytest/SKILL.md",
+      "computedHash": "4cd96fbbfbc20b0f17ed611707a4721712f8bd78496fc1db7db4d5b92531b479"
+    },
+    "python-testing": {
+      "source": "mindrally/skills",
+      "sourceType": "github",
+      "skillPath": "python-testing/SKILL.md",
+      "computedHash": "7fab03e585cb8850337316e97f5882bef01fa3e72221731cf080337955d0269f"
+    }
+  }
+}
