@@ -1,0 +1,3269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Landclaim Marketplace</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<style>
+  /* ====================== CSS Variables & Reset ====================== */
+  :root {
+    --ink: #17324d;
+    --muted: #68758a;
+    --muted-light: #94a3b8;
+    --brand: #176b52;
+    --brand-dark: #10503d;
+    --brand-light: #1e8f6e;
+    --accent: #5bb98a;
+    --surface: #fff;
+    --surface-alt: #f8faf9;
+    --line: #dbe5e1;
+    --line-light: #e9eef2;
+    --danger: #dc2626;
+    --danger-light: #fef2f2;
+    --warning: #d97706;
+    --warning-light: #fffbeb;
+    --success: #059669;
+    --success-light: #f0fdf4;
+    --info: #0284c7;
+    --info-light: #f0f9ff;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,.06);
+    --shadow-md: 0 4px 14px rgba(0,0,0,.08);
+    --shadow-lg: 0 12px 40px rgba(0,0,0,.12);
+    --radius: 10px;
+    --radius-sm: 6px;
+    --transition: .2s ease;
+    --body-bg: #f0f4f2;
+    --sidebar-bg-from: #0d2b42;
+    --sidebar-bg-to: #1a3550;
+    --header-bg: linear-gradient(135deg, #0d2b42 0%, #16324f 50%, #1d3e5e 100%);
+    --badge-pending-bg: #f0f0f0;
+    --badge-pending-color: #666;
+    --badge-cancelled-bg: #f0f0f0;
+    --badge-cancelled-color: #999;
+    --auth-tab-bg: #edf3f0;
+    --skeleton-from: var(--line-light);
+    --skeleton-to: #f0f4f2;
+    --code-bg: #e8ecea;
+    --auth-aside-bg: linear-gradient(145deg, #0d5541, #1c7b5f);
+  }
+
+  /* ====================== Dark Mode ====================== */
+  [data-theme="dark"] {
+    --ink: #e2e8f0;
+    --muted: #94a3b8;
+    --muted-light: #64748b;
+    --brand: #34d399;
+    --brand-dark: #2dd4a0;
+    --brand-light: #6ee7b7;
+    --accent: #4ade80;
+    --surface: #1a2332;
+    --surface-alt: #1e293b;
+    --line: #334155;
+    --line-light: #2d3748;
+    --danger: #f87171;
+    --danger-light: rgba(248,113,113,.12);
+    --warning: #fbbf24;
+    --warning-light: rgba(251,191,36,.12);
+    --success: #34d399;
+    --success-light: rgba(52,211,153,.12);
+    --info: #38bdf8;
+    --info-light: rgba(56,189,248,.12);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,.2);
+    --shadow-md: 0 4px 14px rgba(0,0,0,.25);
+    --shadow-lg: 0 12px 40px rgba(0,0,0,.35);
+    --body-bg: #0f172a;
+    --sidebar-bg-from: #0a0f1a;
+    --sidebar-bg-to: #111827;
+    --header-bg: linear-gradient(135deg, #0a0f1a 0%, #111827 50%, #1a2332 100%);
+    --badge-pending-bg: #2d3748;
+    --badge-pending-color: #94a3b8;
+    --badge-cancelled-bg: #2d3748;
+    --badge-cancelled-color: #64748b;
+    --auth-tab-bg: #1e293b;
+    --skeleton-from: #1e293b;
+    --skeleton-to: #2d3748;
+    --code-bg: #1e293b;
+    --auth-aside-bg: linear-gradient(145deg, #0a1515, #11231e);
+  }
+
+  /* Smooth theme transitions */
+  *, *::before, *::after { transition: background-color .25s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease; }
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    margin: 0; padding: 0;
+    background: var(--body-bg);
+    color: var(--ink);
+    line-height: 1.5;
+    background-image:
+      radial-gradient(ellipse at 20% 50%, rgba(23,107,82,.04) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(91,185,138,.03) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 80%, rgba(23,107,82,.03) 0%, transparent 50%);
+    background-attachment: fixed;
+  }
+  [data-theme="dark"] body {
+    background-image:
+      radial-gradient(ellipse at 20% 50%, rgba(52,211,153,.04) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(52,211,153,.03) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 80%, rgba(52,211,153,.03) 0%, transparent 50%);
+  }
+
+  /* ====================== Typography ====================== */
+  h1, h2, h3, h4 { margin: 0 0 .5rem; line-height: 1.25; }
+  h1 { font-size: 1.75rem; }
+  h2 { font-size: 1.35rem; }
+  h3 { font-size: 1.1rem; }
+  p { margin: 0 0 .5rem; }
+
+  /* ====================== Header ====================== */
+  header {
+    background: var(--header-bg);
+    color: white;
+    padding: 16px 24px;
+    box-shadow: 0 2px 20px rgba(0,0,0,.15);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  header h1 { margin: 0; font-size: 1.35rem; letter-spacing: -.02em; font-weight: 800; }
+  header h1 span { color: var(--accent); }
+  header p { margin: 3px 0 0; opacity: .65; font-size: .82rem; }
+  .header-row { display: flex; align-items: center; justify-content: space-between; max-width: 1200px; margin: 0 auto; }
+
+  /* ====================== Layout ====================== */
+  .app-layout { display: flex; min-height: calc(100vh - 72px); }
+  main { flex: 1; max-width: 1200px; padding: 20px; }
+  main.auth-mode { margin: 0 auto; max-width: 100%; display: flex; justify-content: center; }
+
+  /* ====================== Sidebar ====================== */
+  .sidebar {
+    width: 220px;
+    background: linear-gradient(180deg, var(--sidebar-bg-from) 0%, var(--sidebar-bg-from) 50%, var(--sidebar-bg-to) 100%);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    padding: 12px 8px 16px;
+    flex-shrink: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    transition: width .3s cubic-bezier(.4, 0, .2, 1), padding .3s cubic-bezier(.4, 0, .2, 1);
+    position: sticky;
+    top: 72px;
+    height: calc(100vh - 72px);
+    white-space: nowrap;
+  }
+  .sidebar-brand {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px 16px;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    margin-bottom: 8px;
+  }
+  .sidebar-brand .brand-icon {
+    width: 36px; height: 36px; flex-shrink: 0;
+    display: grid; place-items: center;
+    border-radius: 10px;
+    background: rgba(255,255,255,.12);
+    font-size: 1rem;
+  }
+  .sidebar-brand span { font-size: .95rem; font-weight: 700; letter-spacing: -.01em; }
+  .sidebar-brand span em { font-style: normal; color: var(--accent); }
+  .sidebar-nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+  .nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: transparent;
+    color: rgba(255,255,255,.7);
+    border: none;
+    padding: 9px 12px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: .86rem;
+    font-weight: 500;
+    transition: all var(--transition);
+    text-align: left;
+    width: 100%;
+  }
+  .nav-btn i { width: 18px; text-align: center; font-size: .95rem; flex-shrink: 0; }
+  .nav-btn:hover { background: rgba(255,255,255,.08); color: white; }
+  .nav-btn.active { background: rgba(91,185,138,.18); color: var(--accent); font-weight: 600; }
+  .nav-btn.danger { color: var(--danger); opacity: .85; }
+  .nav-btn.danger:hover { background: rgba(220,38,38,.12); color: var(--danger); }
+  .nav-spacer { margin-top: auto; }
+  .nav-divider { height: 1px; background: rgba(255,255,255,.06); margin: 6px 12px; }
+  .sidebar-user {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 12px;
+    font-size: .8rem;
+    color: rgba(255,255,255,.6);
+  }
+  .sidebar-user .user-avatar {
+    width: 28px; height: 28px; flex-shrink: 0;
+    display: grid; place-items: center;
+    border-radius: 50%;
+    background: rgba(91,185,138,.25);
+    font-size: .75rem;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .sidebar-user .user-info { flex: 1; overflow: hidden; }
+  .sidebar-user .user-info .un { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; color: rgba(255,255,255,.85); }
+  .sidebar-user .user-info .rl { font-size: .72rem; opacity: .7; }
+
+  /* ====================== Sidebar Collapse ====================== */
+  .sidebar.collapsed { width: 56px; padding: 12px 4px 16px; }
+  .sidebar.collapsed .sidebar-brand span,
+  .sidebar.collapsed .sidebar-user .user-info,
+  .sidebar.collapsed .sidebar-collapse span,
+  .sidebar.collapsed .darkmode-btn span { display: none; }
+  .sidebar.collapsed .nav-btn span,
+  .sidebar.collapsed .nav-btn .nav-label { display: none; }
+  .sidebar.collapsed .sidebar-brand span.brand-text { display: none; }
+  .sidebar.collapsed .nav-btn { position: relative; }
+  .sidebar.collapsed .nav-btn:hover::after {
+    content: attr(data-title);
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-left: 12px;
+    padding: 5px 10px;
+    background: #1a3550;
+    color: #fff;
+    font-size: .78rem;
+    font-weight: 600;
+    white-space: nowrap;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.25);
+    z-index: 999;
+    pointer-events: none;
+    animation: tooltipFade .15s ease;
+  }
+  .sidebar.collapsed .sidebar-collapse:hover::after {
+    content: 'Expand';
+    position: absolute;
+    left: 100%;
+    margin-left: 12px;
+    padding: 5px 10px;
+    background: #1a3550;
+    color: #fff;
+    font-size: .78rem;
+    font-weight: 600;
+    white-space: nowrap;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.25);
+    z-index: 999;
+    pointer-events: none;
+  }
+  @keyframes tooltipFade { from { opacity: 0; transform: translateY(-50%) translateX(-4px); } to { opacity: 1; transform: translateY(-50%) translateX(0); } }
+  .sidebar.collapsed .sidebar-collapse i { transform: scaleX(-1); }
+  .sidebar.collapsed .sidebar-brand { justify-content: center; padding: 8px 0 16px; }
+  .sidebar.collapsed .sidebar-brand .brand-icon { margin: 0; }
+  .sidebar.collapsed .nav-btn { justify-content: center; padding: 9px 6px; }
+  .sidebar.collapsed .nav-btn i { margin: 0; }
+  .sidebar.collapsed .sidebar-user { justify-content: center; padding: 10px 6px; }
+  .sidebar.collapsed .sidebar-user .user-avatar { margin: 0; }
+  .sidebar.collapsed .sidebar-bottom { align-items: center; }
+  .sidebar.collapsed .darkmode-btn { justify-content: center; padding: 9px 6px; }
+
+  .sidebar-bottom {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    border-top: 1px solid rgba(255,255,255,.06);
+    margin-top: 6px;
+    padding-top: 6px;
+  }
+
+  .sidebar-collapse, .darkmode-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: transparent;
+    color: rgba(255,255,255,.5);
+    border: none;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: .82rem;
+    transition: all var(--transition);
+    text-align: left;
+    width: 100%;
+  }
+  .sidebar-collapse:hover, .darkmode-btn:hover { background: rgba(255,255,255,.08); color: rgba(255,255,255,.8); }
+  .sidebar-collapse i, .darkmode-btn i { width: 18px; text-align: center; font-size: .9rem; flex-shrink: 0; }
+  .sidebar-collapse i { transition: transform .3s cubic-bezier(.4, 0, .2, 1); }
+
+  /* ====================== Sidebar Toggle (mobile) ====================== */  .sidebar-toggle { display: none; background: transparent; border: none; color: white; font-size: 1.25rem; cursor: pointer; padding: 4px 8px; border-radius: 4px; }
+  .sidebar-toggle:hover { background: rgba(255,255,255,.1); }
+  .sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 150; }
+
+  @media (max-width: 768px) {
+    .sidebar { width: 56px; padding: 12px 4px 16px; }
+    .sidebar .sidebar-brand span,
+    .sidebar .sidebar-user .user-info,
+    .sidebar .sidebar-collapse span,
+    .sidebar .darkmode-btn span { display: none; }
+    .sidebar .sidebar-collapse i { transform: scaleX(-1); }
+    .sidebar .sidebar-brand { justify-content: center; padding: 8px 0 16px; }
+    .sidebar .sidebar-brand .brand-icon { margin: 0; }
+    .sidebar .nav-btn { justify-content: center; padding: 9px 6px; }
+    .sidebar .nav-btn i { margin: 0; }
+    .sidebar .sidebar-user { justify-content: center; padding: 10px 6px; }
+    .sidebar .sidebar-user .user-avatar { margin: 0; }
+    .sidebar .sidebar-bottom { align-items: center; }
+    .sidebar .darkmode-btn { justify-content: center; padding: 9px 6px; }
+  }
+  @media (max-width: 600px) {
+    .sidebar { display: none; }
+    .sidebar.open { display: flex; position: fixed; left: 0; top: 72px; z-index: 200; width: 240px; box-shadow: var(--shadow-lg); }
+    .sidebar.open ~ .sidebar-backdrop { display: block; }
+    .sidebar-backdrop.open { display: block; }
+    .sidebar-toggle { display: block; }
+    main { padding: 12px; }
+  }
+
+  /* ====================== Cards & Panels ====================== */
+  .panel {
+    background: var(--surface);
+    border-radius: 14px;
+    padding: 24px 28px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 4px 14px rgba(0,0,0,.04);
+    margin-bottom: 20px;
+    border: 1px solid var(--line-light);
+    animation: panelIn .35s ease both;
+    position: relative;
+  }
+  .panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--brand), var(--accent));
+    border-radius: 14px 14px 0 0;
+    opacity: 0;
+    transition: opacity .3s ease;
+  }
+  .panel:hover::before { opacity: 1; }
+  @keyframes panelIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    margin-top: 12px;
+  }
+  .card {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px 18px;
+    background: var(--surface);
+    transition: all .25s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--brand), var(--accent));
+    opacity: 0;
+    transition: opacity .3s ease;
+  }
+  .card:hover { border-color: var(--brand); box-shadow: 0 8px 25px rgba(0,0,0,.08); transform: translateY(-2px); }
+  .card:hover::after { opacity: 1; }
+  .card h3, .card h4 { margin: 0 0 6px; font-size: 1rem; }
+  .card p { margin: 0 0 4px; font-size: .88rem; }
+  .card .row { display: flex; justify-content: space-between; padding: 5px 0; font-size: .86rem; border-bottom: 1px solid var(--line-light); }
+  .card .row:last-child { border-bottom: none; }
+  .card .row span:first-child { color: var(--muted); }
+  .card-actions { margin-top: 12px; display: flex; gap: 6px; flex-wrap: wrap; }
+
+  [data-theme="dark"] .panel { border-color: rgba(255,255,255,.06); }
+  [data-theme="dark"] .card { border-color: rgba(255,255,255,.06); }
+  [data-theme="dark"] .card:hover { border-color: var(--brand); }
+
+  /* ====================== Status Badges ====================== */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 12px;
+    border-radius: 100px;
+    font-size: .72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    border: 1px solid transparent;
+  }
+  .badge i { font-size: .65rem; }
+  .badge-active { background: var(--success-light); color: var(--success); border-color: rgba(5,150,105,.15); }
+  .badge-flagged { background: var(--warning-light); color: var(--warning); border-color: rgba(217,119,6,.15); }
+  .badge-disputed { background: var(--danger-light); color: var(--danger); border-color: rgba(220,38,38,.15); }
+  .badge-pending { background: var(--badge-pending-bg); color: var(--badge-pending-color); }
+  .badge-in_progress { background: var(--info-light); color: var(--info); border-color: rgba(2,132,199,.15); }
+  .badge-completed { background: var(--success-light); color: var(--success); border-color: rgba(5,150,105,.15); }
+  .badge-cancelled { background: var(--badge-cancelled-bg); color: var(--badge-cancelled-color); }
+
+  /* ====================== Buttons ====================== */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: var(--brand);
+    color: white;
+    border: none;
+    padding: 9px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: .86rem;
+    font-weight: 600;
+    transition: all .25s ease;
+    text-decoration: none;
+    line-height: 1.3;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,.1), transparent);
+    opacity: 0;
+    transition: opacity .3s;
+  }
+  .btn:hover { background: var(--brand-light); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(23,107,82,.35); }
+  .btn:hover::after { opacity: 1; }
+  .btn:active { transform: translateY(0) scale(.98); }
+  .btn-sm { padding: 6px 12px; font-size: .8rem; border-radius: 6px; }
+  .btn-outline { background: transparent; color: var(--brand); border: 1.5px solid var(--brand); }
+  .btn-outline::after { display: none; }
+  .btn-outline:hover { background: var(--brand); color: white; border-color: var(--brand); }
+  .btn-danger { background: var(--danger); }
+  .btn-danger:hover { background: #b91c1c; box-shadow: 0 6px 20px rgba(220,38,38,.35); }
+  .btn-danger-outline { background: transparent; color: var(--danger); border: 1.5px solid var(--danger); }
+  .btn-danger-outline::after { display: none; }
+  .btn-danger-outline:hover { background: var(--danger); color: white; }
+  .btn-muted { background: var(--surface-alt); color: var(--muted); border: 1px solid var(--line); }
+  .btn-muted::after { display: none; }
+  .btn-muted:hover { background: var(--line); color: var(--ink); transform: none; box-shadow: none; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+  .btn:disabled::after { display: none; }
+
+  [data-theme="dark"] .btn-outline { border-color: var(--brand); }
+  [data-theme="dark"] .btn-muted { background: var(--surface-alt); border-color: var(--line); color: var(--muted-light); }
+  [data-theme="dark"] .btn-muted:hover { background: var(--line); color: var(--ink); }
+
+  /* ====================== Forms ====================== */
+  .form-group { margin-bottom: 18px; }
+  .form-group label { display: block; margin-bottom: 5px; font-size: .82rem; font-weight: 700; color: var(--muted); letter-spacing: .01em; }
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    font-size: .9rem;
+    color: var(--ink);
+    background: var(--surface);
+    transition: all .25s ease;
+    font-family: inherit;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    outline: none;
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px rgba(23,107,82,.1);
+  }
+  .form-group textarea { resize: vertical; min-height: 80px; }
+  .form-group .hint { font-size: .78rem; color: var(--muted-light); margin-top: 4px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
+
+  /* ====================== Toast Notifications ====================== */
+  #toastContainer {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 380px;
+  }
+  .toast {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 18px;
+    border-radius: 12px;
+    background: var(--surface);
+    box-shadow: 0 8px 32px rgba(0,0,0,.15);
+    border: 1px solid var(--line-light);
+    border-left: 4px solid var(--brand);
+    animation: slideIn .35s cubic-bezier(.16, 1, .3, 1);
+    font-size: .88rem;
+    line-height: 1.4;
+    backdrop-filter: blur(12px);
+  }
+  .toast.toast-success { border-left-color: var(--success); }
+  .toast.toast-error { border-left-color: var(--danger); }
+  .toast.toast-warning { border-left-color: var(--warning); }
+  .toast.toast-info { border-left-color: var(--info); }
+  .toast-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+  .toast-content { flex: 1; }
+  .toast-close { background: none; border: none; cursor: pointer; color: var(--muted-light); padding: 0; font-size: 1.1rem; line-height: 1; }
+  .toast-close:hover { color: var(--ink); }
+  @keyframes slideIn { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+  @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(120%); opacity: 0; } }
+  [data-theme="dark"] .toast { border-color: rgba(255,255,255,.08); background: rgba(26,35,44,.96); }
+
+  /* ====================== Loading States ====================== */
+  .spinner {
+    display: inline-block;
+    width: 22px;
+    height: 22px;
+    border: 3px solid var(--line);
+    border-top-color: var(--brand);
+    border-radius: 50%;
+    animation: spin .65s cubic-bezier(.4, 0, .2, 1) infinite;
+  }
+  .spinner-sm { width: 14px; height: 14px; border-width: 2px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-wrap { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 40px 0; color: var(--muted); }
+  .skeleton {
+    background: linear-gradient(90deg, var(--line-light) 25%, var(--surface-alt) 50%, var(--line-light) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+    border-radius: 6px;
+    height: 14px;
+    margin: 8px 0;
+  }
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+  .error-state { text-align: center; padding: 40px 20px; }
+  .error-state .error-icon { font-size: 3rem; margin-bottom: 12px; opacity: .4; }
+  .error-state p { color: var(--muted); font-size: .92rem; }
+  .empty-state { text-align: center; padding: 40px 20px; }
+  .empty-state .empty-icon { font-size: 3rem; margin-bottom: 12px; opacity: .3; }
+  .empty-state p { color: var(--muted-light); font-size: .92rem; }
+
+  /* ====================== Landing / Auth Page ====================== */
+  #authView {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0a1a14;
+    overflow: hidden;
+  }
+
+  /* Nature background from Unsplash */
+  .landing-bg {
+    position: absolute;
+    inset: -10px;
+    background:
+      url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80')
+      center/cover no-repeat;
+    filter: blur(3px) brightness(0.4) saturate(0.9);
+    transform: scale(1.05);
+    animation: bgKenBurns 25s ease-in-out infinite alternate;
+  }
+  @keyframes bgKenBurns {
+    0% { transform: scale(1.05) translateX(0); }
+    100% { transform: scale(1.12) translateX(-20px); }
+  }
+
+  /* Decorative floating orbs */
+  .landing-orb {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .landing-orb--1 {
+    width: 500px; height: 500px;
+    top: -180px; right: -120px;
+    background: radial-gradient(circle, rgba(91,185,138,.15) 0%, transparent 70%);
+    animation: orbFloat1 20s ease-in-out infinite;
+  }
+  .landing-orb--2 {
+    width: 350px; height: 350px;
+    bottom: -100px; left: -80px;
+    background: radial-gradient(circle, rgba(91,185,138,.1) 0%, transparent 70%);
+    animation: orbFloat2 18s ease-in-out infinite;
+  }
+  .landing-orb--3 {
+    width: 200px; height: 200px;
+    top: 40%; left: 15%;
+    background: radial-gradient(circle, rgba(91,185,138,.08) 0%, transparent 60%);
+    animation: orbFloat3 15s ease-in-out infinite;
+  }
+  @keyframes orbFloat1 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-30px, 20px) scale(1.05); }
+  }
+  @keyframes orbFloat2 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(25px, -15px) scale(1.08); }
+  }
+  @keyframes orbFloat3 {
+    0%, 100% { transform: translate(0, 0) scale(1); opacity: .5; }
+    50% { transform: translate(15px, 20px) scale(1.1); opacity: .8; }
+  }
+
+  /* Floating leaves (SVG-like shapes) */
+  .landing-leaf {
+    position: absolute;
+    width: 20px; height: 24px;
+    background: rgba(91,185,138,.2);
+    border-radius: 0 60% 60% 0 / 0 60% 60% 0;
+    pointer-events: none;
+    z-index: 1;
+    animation: leafFall linear infinite;
+  }
+  .landing-leaf--1 { left: 10%; animation-duration: 14s; animation-delay: -2s; width: 16px; height: 20px; }
+  .landing-leaf--2 { left: 30%; animation-duration: 18s; animation-delay: -7s; width: 22px; height: 26px; }
+  .landing-leaf--3 { right: 25%; animation-duration: 16s; animation-delay: -4s; width: 18px; height: 22px; }
+  .landing-leaf--4 { right: 15%; animation-duration: 20s; animation-delay: -10s; width: 14px; height: 18px; }
+  .landing-leaf--5 { left: 50%; animation-duration: 22s; animation-delay: -14s; width: 20px; height: 24px; }
+  @keyframes leafFall {
+    0% { transform: translateY(-5vh) rotate(0deg) scale(1); opacity: 0; }
+    10% { opacity: .7; }
+    90% { opacity: .5; }
+    100% { transform: translateY(105vh) rotate(720deg) scale(.6); opacity: 0; }
+  }
+
+  .landing-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(10,26,20,.92) 0%, rgba(20,50,40,.7) 50%, rgba(10,26,20,.92) 100%);
+    z-index: 1;
+  }
+
+  .landing-container {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 60px;
+    max-width: 1050px;
+    width: 100%;
+    padding: 20px;
+    animation: landingFadeIn .8s ease both;
+  }
+  @keyframes landingFadeIn {
+    from { opacity: 0; transform: translateY(30px) scale(.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  /* Brand section */
+  .landing-brand {
+    flex: 1;
+    color: #fff;
+    max-width: 420px;
+    animation: brandSlideIn .8s ease .2s both;
+  }
+  @keyframes brandSlideIn {
+    from { opacity: 0; transform: translateX(-30px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  .landing-brand .brand-icon {
+    width: 56px; height: 56px;
+    display: grid; place-items: center;
+    border-radius: 16px;
+    background: rgba(255,255,255,.1);
+    border: 1px solid rgba(255,255,255,.15);
+    font-size: 1.4rem;
+    margin-bottom: 28px;
+    backdrop-filter: blur(4px);
+    transition: transform .3s ease, box-shadow .3s ease;
+  }
+  .landing-brand .brand-icon:hover {
+    transform: scale(1.05) rotate(-3deg);
+    box-shadow: 0 8px 30px rgba(91,185,138,.25);
+  }
+  .landing-brand h1 {
+    font-size: 2.8rem;
+    font-weight: 800;
+    letter-spacing: -.03em;
+    margin: 0 0 14px;
+    line-height: 1.12;
+  }
+  .landing-brand h1 .highlight {
+    background: linear-gradient(135deg, #5bb98a, #34d399);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .landing-brand .subtitle {
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: rgba(255,255,255,.7);
+    margin: 0 0 10px;
+  }
+  .landing-brand .trust-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px 6px 10px;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 100px;
+    font-size: .78rem;
+    color: rgba(255,255,255,.6);
+    margin-bottom: 28px;
+    backdrop-filter: blur(4px);
+  }
+  .landing-brand .trust-badge i { color: #5bb98a; font-size: .7rem; }
+  .landing-features {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .landing-features li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 0;
+    font-size: .92rem;
+    color: rgba(255,255,255,.85);
+    border-bottom: 1px solid rgba(255,255,255,.06);
+    transition: transform .2s ease, opacity .2s ease;
+    transform: translateX(0);
+  }
+  .landing-features li:last-child { border-bottom: none; }
+  .landing-features li:hover {
+    transform: translateX(5px);
+    color: #fff;
+  }
+  .landing-features li i {
+    width: 22px;
+    color: #5bb98a;
+    font-size: .85rem;
+    flex-shrink: 0;
+  }
+
+  /* Auth Card (glassmorphism) */
+  .landing-card {
+    width: 420px;
+    flex-shrink: 0;
+    background: rgba(255,255,255,.96);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-radius: 20px;
+    padding: 40px 36px;
+    box-shadow:
+      0 30px 80px rgba(0,0,0,.35),
+      0 0 0 1px rgba(255,255,255,.08);
+    animation: cardSlideIn .8s ease .3s both;
+  }
+  @keyframes cardSlideIn {
+    from { opacity: 0; transform: translateX(30px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  .landing-card .card-heading { margin-bottom: 28px; }
+  .landing-card .card-heading h2 {
+    margin: 0 0 6px;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #17324d;
+    letter-spacing: -.02em;
+  }
+  .landing-card .card-heading p {
+    margin: 0;
+    color: #68758a;
+    font-size: .9rem;
+  }
+
+  /* Tabs inside card */
+  .card-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    margin-bottom: 24px;
+    padding: 4px;
+    background: #edf3f0;
+    border-radius: 12px;
+    position: relative;
+  }
+  .card-tab {
+    border: 0;
+    border-radius: 9px;
+    padding: 10px 16px;
+    color: #526477;
+    background: transparent;
+    font-weight: 700;
+    font-size: .88rem;
+    cursor: pointer;
+    transition: all .25s ease;
+    position: relative;
+  }
+  .card-tab.active {
+    color: #10503d;
+    background: #fff;
+    box-shadow: 0 2px 7px rgba(27,69,56,.12);
+  }
+
+  /* Status message */
+  .auth-status {
+    min-height: 22px;
+    margin: -4px 0 16px;
+    padding: 0 2px;
+    color: var(--muted);
+    font-size: .85rem;
+  }
+  .auth-status.error { color: #dc2626; }
+  .auth-status.success { color: #059669; }
+
+  /* Form fields */
+  .auth-field { margin-bottom: 18px; }
+  .auth-field label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: .82rem;
+    font-weight: 700;
+    color: #34495d;
+    letter-spacing: .01em;
+  }
+  .auth-field .input-wrap { position: relative; }
+  .auth-field .input-wrap > i {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    font-size: .95rem;
+    pointer-events: none;
+    transition: color .25s ease;
+  }
+  .auth-field input,
+  .auth-field select {
+    width: 100%;
+    padding: 12px 14px 12px 42px;
+    border: 1.5px solid #dbe5e1;
+    border-radius: 10px;
+    font-size: .9rem;
+    color: #17324d;
+    background: #fff;
+    transition: all .25s ease;
+    font-family: inherit;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .auth-field select { padding-left: 14px; }
+  .auth-field input:focus {
+    outline: none;
+    border-color: #176b52;
+    box-shadow: 0 0 0 3px rgba(23,107,82,.12);
+  }
+  .auth-field .input-wrap:focus-within > i { color: #176b52; }
+  .auth-field input::placeholder { color: #94a3b8; }
+
+  /* Password toggle */
+  .pw-field input { padding-right: 58px; }
+  .pw-toggle {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 0;
+    padding: 6px 10px;
+    background: transparent;
+    color: #176b52;
+    font-size: .8rem;
+    font-weight: 700;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background .2s;
+    z-index: 1;
+  }
+  .pw-toggle:hover { background: rgba(23,107,82,.08); }
+
+  /* Auth submit button */
+  .btn-auth {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 13px;
+    border: 0;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #176b52, #1e8f6e);
+    color: #fff;
+    font-size: .95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .3s ease;
+    margin-top: 8px;
+    font-family: inherit;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-auth::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,.12), transparent);
+    opacity: 0;
+    transition: opacity .3s ease;
+  }
+  .btn-auth:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(23,107,82,.45);
+  }
+  .btn-auth:hover::after { opacity: 1; }
+  .btn-auth:active { transform: translateY(0) scale(.99); }
+  .btn-auth:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+  }
+  .btn-auth i { transition: transform .3s ease; }
+  .btn-auth:hover i { transform: translateX(3px); }
+
+  /* Reused by other views */
+  .btn-block { width: 100%; justify-content: center; padding: 12px; margin-top: 4px; font-size: .93rem; }
+
+  /* Form visibility */
+  .auth-form { display: none; }
+  .auth-form.active { display: block; animation: fadeIn .3s ease; }
+
+  .auth-form .form-note {
+    margin: 18px 0 0;
+    color: #94a3b8;
+    font-size: .82rem;
+    line-height: 1.5;
+    text-align: center;
+  }
+  .auth-form .form-note strong { color: #176b52; cursor: pointer; transition: color .2s; }
+  .auth-form .form-note strong:hover { color: #1e8f6e; text-decoration: underline; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+  /* Dark mode overrides for landing */
+  [data-theme="dark"] #authView { background: #0a0f0e; }
+  [data-theme="dark"] .landing-overlay {
+    background: linear-gradient(135deg, rgba(10,15,14,.93) 0%, rgba(15,25,22,.8) 50%, rgba(10,15,14,.93) 100%);
+  }
+  [data-theme="dark"] .landing-orb--1 { background: radial-gradient(circle, rgba(52,211,153,.1) 0%, transparent 70%); }
+  [data-theme="dark"] .landing-orb--2 { background: radial-gradient(circle, rgba(52,211,153,.08) 0%, transparent 70%); }
+  [data-theme="dark"] .landing-orb--3 { background: radial-gradient(circle, rgba(52,211,153,.06) 0%, transparent 60%); }
+  [data-theme="dark"] .landing-card {
+    background: rgba(26,35,44,.96);
+    box-shadow: 0 30px 80px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.06);
+  }
+  [data-theme="dark"] .landing-card .card-heading h2 { color: #e2e8f0; }
+  [data-theme="dark"] .landing-card .card-heading p { color: #94a3b8; }
+  [data-theme="dark"] .card-tabs { background: #1e293b; }
+  [data-theme="dark"] .card-tab { color: #94a3b8; }
+  [data-theme="dark"] .card-tab.active { color: #2dd4a0; background: #1a2332; box-shadow: 0 2px 7px rgba(0,0,0,.2); }
+  [data-theme="dark"] .auth-field label { color: #cbd5e1; }
+  [data-theme="dark"] .auth-field input,
+  [data-theme="dark"] .auth-field select {
+    background: #1e293b;
+    border-color: #334155;
+    color: #e2e8f0;
+  }
+  [data-theme="dark"] .auth-field input:focus {
+    border-color: #34d399;
+    box-shadow: 0 0 0 3px rgba(52,211,153,.12);
+  }
+  [data-theme="dark"] .auth-field input::placeholder { color: #64748b; }
+  [data-theme="dark"] .auth-field .input-wrap > i { color: #64748b; }
+  [data-theme="dark"] .auth-field .input-wrap:focus-within > i { color: #34d399; }
+  [data-theme="dark"] .pw-toggle { color: #34d399; }
+  [data-theme="dark"] .pw-toggle:hover { background: rgba(52,211,153,.1); }
+  [data-theme="dark"] .auth-form .form-note { color: #64748b; }
+  [data-theme="dark"] .auth-form .form-note strong { color: #34d399; }
+  [data-theme="dark"] .auth-form .form-note strong:hover { color: #6ee7b7; }
+
+  /* Responsive */
+  @media (max-width: 820px) {
+    .landing-container {
+      flex-direction: column;
+      gap: 30px;
+      padding: 16px;
+    }
+    .landing-brand {
+      max-width: 100%;
+      text-align: center;
+    }
+    .landing-brand .brand-icon { margin: 0 auto 24px; }
+    .landing-brand h1 { font-size: 2rem; }
+    .landing-features { display: none; }
+    .landing-leaf { display: none; }
+    .landing-card { width: 100%; max-width: 420px; padding: 28px 24px; }
+    .landing-card .card-heading h2 { font-size: 1.35rem; }
+  }
+  @media (max-width: 480px) {
+    #authView { align-items: flex-start; padding-top: 16px; }
+    .landing-card { padding: 24px 18px; border-radius: 16px; }
+    .landing-card .card-heading h2 { font-size: 1.2rem; }
+    .form-row { grid-template-columns: 1fr; }
+    .auth-field input { font-size: .85rem; }
+    .landing-orb--1, .landing-orb--2, .landing-orb--3 { display: none; }
+  }
+
+  /* ====================== Map ====================== */
+  #map { height: 320px; border-radius: var(--radius-sm); border: 1.5px solid var(--line); margin-top: 6px; z-index: 1; }
+
+  /* ====================== Stats Grid ====================== */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 20px 20px;
+    text-align: center;
+    transition: all .25s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--brand), var(--accent));
+    opacity: 0;
+    transition: opacity .3s;
+  }
+  .stat-card:hover { border-color: #c5d5cd; transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,.08); }
+  .stat-card:hover::before { opacity: 1; }
+  .stat-card .stat-icon {
+    width: 40px; height: 40px;
+    display: grid; place-items: center;
+    border-radius: 10px;
+    background: rgba(23,107,82,.08);
+    color: var(--brand);
+    font-size: 1rem;
+    margin: 0 auto 10px;
+  }
+  .stat-card .stat-value { font-size: 1.8rem; font-weight: 800; color: var(--brand); line-height: 1.2; }
+  .stat-card .stat-label { font-size: .8rem; color: var(--muted); margin-top: 4px; font-weight: 500; }
+  .stat-card.stat-danger .stat-icon { background: rgba(220,38,38,.08); color: var(--danger); }
+  .stat-card.stat-danger .stat-value { color: var(--danger); }
+  .stat-card.stat-warning .stat-icon { background: rgba(217,119,6,.08); color: var(--warning); }
+  .stat-card.stat-warning .stat-value { color: var(--warning); }
+
+  [data-theme="dark"] .stat-card { border-color: rgba(255,255,255,.06); }
+  [data-theme="dark"] .stat-card .stat-icon { background: rgba(52,211,153,.1); }
+
+  /* ====================== Table ====================== */
+  .table-wrap {
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 480px;
+    margin-top: 12px;
+    border-radius: 10px;
+    border: 1px solid var(--line-light);
+  }
+  table { width: 100%; border-collapse: collapse; font-size: .86rem; }
+  th {
+    text-align: left;
+    padding: 12px 14px;
+    background: var(--surface-alt);
+    color: var(--muted);
+    font-weight: 700;
+    font-size: .76rem;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    border-bottom: 2px solid var(--line);
+    position: sticky;
+    top: 0;
+  }
+  td { padding: 11px 14px; border-bottom: 1px solid var(--line-light); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tbody tr { transition: background .15s; }
+  tbody tr:hover td { background: var(--surface-alt); }
+  tbody tr:nth-child(even) td { background: rgba(0,0,0,.015); }
+  tbody tr:nth-child(even):hover td { background: var(--surface-alt); }
+  .actions-cell { display: flex; gap: 4px; flex-wrap: wrap; }
+
+  [data-theme="dark"] .table-wrap { border-color: rgba(255,255,255,.06); }
+  [data-theme="dark"] tbody tr:nth-child(even) td { background: rgba(255,255,255,.02); }
+
+  /* ====================== Misc ====================== */
+  .hidden { display: none !important; }
+  .flex { display: flex; }
+  .flex-center { align-items: center; justify-content: center; }
+  .gap-2 { gap: 8px; }
+  .gap-3 { gap: 12px; }
+  .mt-2 { margin-top: 8px; }
+  .mt-3 { margin-top: 12px; }
+  .mt-4 { margin-top: 20px; }
+  .mb-3 { margin-bottom: 12px; }
+  .text-center { text-align: center; }
+  .text-muted { color: var(--muted); }
+  .text-sm { font-size: .82rem; }
+  .break-word { word-break: break-word; }
+  .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 12px; border-radius: 100px;
+    background: var(--surface-alt); color: var(--muted);
+    font-size: .78rem;
+    font-weight: 600;
+    border: 1px solid var(--line-light);
+  }
+  .chip-brand { background: rgba(23,107,82,.1); color: var(--brand); border-color: rgba(23,107,82,.15); }
+  [data-theme="dark"] .chip { border-color: rgba(255,255,255,.06); }
+
+  /* ====================== Responsive ====================== */
+  @media (max-width: 600px) {
+    main { padding: 12px; }
+    .panel { padding: 14px 16px; }
+    .nav { padding: 6px 8px; gap: 4px; }
+    .nav-btn { padding: 6px 10px; font-size: .8rem; }
+    .grid { grid-template-columns: 1fr; }
+    header { padding: 14px 16px; }
+    header h1 { font-size: 1.25rem; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    #toastContainer { left: 12px; right: 12px; max-width: none; }
+  }
+
+  /* ====================== Notary Registration ====================== */
+  .coord-info { font-size: .82rem; color: var(--muted); margin-top: 8px; padding: 10px 12px; background: var(--surface-alt); border-radius: 8px; border: 1px solid var(--line-light); }
+  .coord-info code { font-size: .76rem; background: var(--code-bg); padding: 2px 8px; border-radius: 4px; font-weight: 600; }
+
+  /* ====================== Contract Detail ====================== */
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 600px) { .detail-grid { grid-template-columns: 1fr; } }
+  .detail-group dt { font-size: .78rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; font-weight: 700; margin-bottom: 2px; }
+  .detail-group dd { margin: 0 0 12px; }
+
+  /* ====================== Profile Page ====================== */
+  #profileView {
+    animation: profileEntrance .45s ease both;
+    max-width: 860px;
+    margin: 0 auto;
+  }
+  @keyframes profileEntrance {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Profile Card Cover */
+  .profile-card {
+    background: var(--surface);
+    border-radius: 16px;
+    border: 1px solid var(--line-light);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .profile-cover {
+    position: relative;
+    height: 160px;
+    background: linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 40%, var(--accent) 100%);
+    overflow: hidden;
+  }
+  .profile-cover::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 100%, rgba(255,255,255,.12) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 0%, rgba(255,255,255,.08) 0%, transparent 50%);
+    z-index: 1;
+  }
+  .profile-cover::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0; right: 0;
+    height: 40px;
+    background: var(--surface);
+    border-radius: 20px 20px 0 0;
+    z-index: 2;
+  }
+
+  /* Decorative elements on cover */
+  .profile-cover-dots {
+    position: absolute;
+    top: 20px;
+    right: 24px;
+    display: grid;
+    grid-template-columns: repeat(3, 6px);
+    gap: 6px;
+    z-index: 1;
+    opacity: .2;
+  }
+  .profile-cover-dots span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #fff;
+  }
+  .profile-cover-icon {
+    position: absolute;
+    bottom: 50px;
+    right: 28px;
+    font-size: 3.5rem;
+    color: rgba(255,255,255,.08);
+    z-index: 0;
+  }
+
+  /* Profile Avatar + Header Row (overlapping cover) */
+  .profile-avatar-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 20px;
+    padding: 0 28px 20px;
+    margin-top: -40px;
+    position: relative;
+    z-index: 3;
+  }
+
+
+  .profile-header-text {
+    flex: 1;
+    min-width: 0;
+    padding-bottom: 2px;
+  }
+  .profile-name {
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin: 0 0 2px;
+    color: var(--ink);
+    letter-spacing: -.02em;
+  }
+  .profile-role-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .profile-role-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 12px;
+    border-radius: 100px;
+    font-size: .73rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    background: rgba(23,107,82,.1);
+    color: var(--brand);
+    border: 1px solid rgba(23,107,82,.15);
+  }
+  .profile-verified-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: .73rem;
+    font-weight: 600;
+    color: var(--success);
+  }
+  .profile-verified-badge i { font-size: .65rem; }
+  .profile-email-line {
+    font-size: .82rem;
+    color: var(--muted);
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  /* Profile Picture Upload */
+  .profile-avatar-wrap {
+    position: relative;
+    flex-shrink: 0;
+  }
+  .profile-avatar-wrap .profile-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 2rem;
+    font-weight: 800;
+    color: #fff;
+    background: linear-gradient(135deg, var(--brand), var(--accent));
+    box-shadow: 0 4px 16px rgba(23,107,82,.3);
+    flex-shrink: 0;
+    border: 3px solid var(--surface);
+    transition: transform .3s ease, box-shadow .3s ease;
+    overflow: hidden;
+    position: relative;
+  }
+  .profile-avatar-wrap .profile-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    display: block;
+  }
+  .profile-avatar-upload {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--brand);
+    color: #fff;
+    border: 2px solid var(--surface);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    font-size: .75rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,.2);
+    transition: all .25s ease;
+    z-index: 5;
+  }
+  .profile-avatar-upload:hover {
+    background: var(--brand-light);
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(23,107,82,.4);
+  }
+  .profile-avatar-upload input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    border-radius: 50%;
+  }
+  .profile-avatar-upload.loading {
+    pointer-events: none;
+    opacity: .7;
+  }
+  .profile-avatar-upload .spinner-sm {
+    width: 12px;
+    height: 12px;
+    border-width: 2px;
+    border-color: rgba(255,255,255,.3);
+    border-top-color: #fff;
+  }
+
+  @media (max-width: 600px) {
+    .profile-avatar-wrap .profile-avatar { width: 68px; height: 68px; font-size: 1.6rem; }
+    .profile-avatar-upload { width: 24px; height: 24px; font-size: .65rem; }
+  }
+  @media (max-width: 480px) {
+    .profile-avatar-wrap .profile-avatar { width: 56px; height: 56px; font-size: 1.3rem; }
+    .profile-avatar-upload { width: 22px; height: 22px; font-size: .6rem; }
+  }
+  .profile-email-line span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .profile-email-line i {
+    font-size: .7rem;
+    opacity: .6;
+  }
+
+  /* Profile Stats Row */
+  .profile-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--line-light);
+    border-top: 1px solid var(--line-light);
+  }
+  .profile-stat {
+    background: var(--surface);
+    padding: 16px 12px 14px;
+    text-align: center;
+    transition: background .2s ease;
+    cursor: default;
+  }
+  .profile-stat:hover {
+    background: var(--surface-alt);
+  }
+  .profile-stat-value {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--brand);
+    line-height: 1.2;
+  }
+  .profile-stat-label {
+    font-size: .68rem;
+    color: var(--muted);
+    margin-top: 2px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+  }
+
+  /* Profile Body / Tabs */
+  .profile-body {
+    background: var(--surface);
+    border-radius: 12px;
+    border: 1px solid var(--line-light);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+  .profile-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--line-light);
+    padding: 0 20px;
+    background: var(--surface-alt);
+  }
+  .profile-tab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 13px 18px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-size: .84rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    position: relative;
+    transition: color .2s ease;
+    margin-bottom: -1px;
+  }
+  .profile-tab i { font-size: .82rem; }
+  .profile-tab:hover { color: var(--ink); }
+  .profile-tab.active {
+    color: var(--brand);
+  }
+  .profile-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 12px;
+    right: 12px;
+    height: 2.5px;
+    background: var(--brand);
+    border-radius: 3px 3px 0 0;
+  }
+
+  .profile-tab-content {
+    display: none;
+    padding: 24px 24px 28px;
+    animation: tabSlip .3s ease both;
+  }
+  .profile-tab-content.active { display: block; }
+  @keyframes tabSlip {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Profile Status */
+  .profile-status {
+    min-height: 0;
+    margin-bottom: 14px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: .82rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface-alt);
+    color: var(--muted);
+    border: 1px solid var(--line-light);
+    transition: all .25s ease;
+  }
+  .profile-status:empty {
+    display: none;
+  }
+  .profile-status.success {
+    background: var(--success-light);
+    color: var(--success);
+    border-color: rgba(5,150,105,.2);
+  }
+  .profile-status.error {
+    background: var(--danger-light);
+    color: var(--danger);
+    border-color: rgba(220,38,38,.2);
+  }
+
+  /* Profile Edit Form */
+  .profile-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 18px;
+  }
+  .profile-field label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: .8rem;
+    font-weight: 700;
+    color: var(--muted);
+  }
+  .profile-field input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid var(--line);
+    border-radius: 9px;
+    font-size: .88rem;
+    color: var(--ink);
+    background: var(--surface);
+    transition: all .2s ease;
+    font-family: inherit;
+  }
+  .profile-field input:focus {
+    outline: none;
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px rgba(23,107,82,.1);
+  }
+  .profile-field input::placeholder { color: var(--muted-light); }
+  .profile-form-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  /* Account Info Tab */
+  .profile-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .profile-info-card {
+    border: 1px solid var(--line-light);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: border-color .2s;
+  }
+  .profile-info-card:hover {
+    border-color: var(--line);
+  }
+  .profile-info-card-header {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 12px 16px;
+    font-size: .82rem;
+    font-weight: 700;
+    color: var(--ink);
+    background: var(--surface-alt);
+    border-bottom: 1px solid var(--line-light);
+  }
+  .profile-info-card-header i {
+    color: var(--brand);
+    font-size: .85rem;
+  }
+  .profile-info-card-body {
+    padding: 2px 0;
+  }
+  .profile-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 9px 16px;
+    font-size: .84rem;
+    border-bottom: 1px solid var(--line-light);
+  }
+  .profile-info-row:last-child { border-bottom: none; }
+  .profile-info-label {
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .profile-info-value {
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  /* Dark mode overrides */
+  [data-theme="dark"] .profile-cover {
+    background: linear-gradient(135deg, #0a2a20 0%, #0d3d30 40%, #1a5a48 100%);
+  }
+  [data-theme="dark"] .profile-cover::after {
+    background: var(--surface);
+  }
+  [data-theme="dark"] .profile-card,
+  [data-theme="dark"] .profile-body {
+    border-color: rgba(255,255,255,.06);
+  }
+  [data-theme="dark"] .profile-stats {
+    background: rgba(255,255,255,.06);
+  }
+  [data-theme="dark"] .profile-tabs {
+    background: #141e2b;
+    border-color: rgba(255,255,255,.06);
+  }
+  [data-theme="dark"] .profile-stat:hover {
+    background: rgba(255,255,255,.03);
+  }
+  [data-theme="dark"] .profile-info-card {
+    border-color: rgba(255,255,255,.06);
+  }
+  [data-theme="dark"] .profile-info-card:hover {
+    border-color: rgba(255,255,255,.1);
+  }
+  [data-theme="dark"] .profile-info-card-header {
+    background: #141e2b;
+    border-color: rgba(255,255,255,.06);
+  }
+  [data-theme="dark"] .profile-info-row {
+    border-color: rgba(255,255,255,.04);
+  }
+
+  /* Responsive Profile */
+  @media (max-width: 768px) {
+    .profile-avatar-row {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+      padding: 0 20px 16px;
+    }
+    .profile-name { font-size: 1.3rem; }
+    .profile-avatar-wrap .profile-avatar { width: 68px; height: 68px; font-size: 1.6rem; }
+    .profile-stats { grid-template-columns: repeat(2, 1fr); }
+    .profile-form-grid { grid-template-columns: 1fr; }
+    .profile-info-grid { grid-template-columns: 1fr; }
+    .profile-tab { padding: 11px 14px; font-size: .8rem; }
+    .profile-tab-content { padding: 18px 18px 22px; }
+  }
+  @media (max-width: 480px) {
+    .profile-cover { height: 120px; }
+    .profile-avatar-wrap .profile-avatar { width: 56px; height: 56px; font-size: 1.3rem; }
+    .profile-name { font-size: 1.1rem; }
+    .profile-info-row { padding: 0 14px 14px; gap: 2px; }
+    .profile-stats { grid-template-columns: repeat(2, 1fr); }
+    .profile-stat-value { font-size: 1.1rem; }
+    .profile-tab { padding: 9px 10px; font-size: .76rem; gap: 4px; }
+    .profile-tab-content { padding: 14px 14px 18px; }
+    .profile-tabs { padding: 0 10px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ====================== Toast Container ====================== -->
+<div id="toastContainer"></div>
+
+<!-- ====================== Mobile Sidebar Backdrop ====================== -->
+<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebarOnMobile()"></div>
+
+<!-- ====================== Header ====================== -->
+<header>
+  <div class="header-row">
+    <div class="flex gap-2" style="align-items:center;">
+      <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()" aria-label="Toggle sidebar"><i class="fas fa-bars"></i></button>
+      <div>
+        <h1>Landclaim<span>.</span></h1>
+        <p>Transparent land marketplace &amp; fraud detection</p>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="app-layout" id="appLayout">
+  <!-- ====================== Sidebar ====================== -->
+  <nav id="appNav" class="sidebar hidden" aria-label="Main navigation">
+    <div class="sidebar-brand">
+      <div class="brand-icon"><i class="fas fa-mountain"></i></div>
+      <span>Landclaim<em>.</em></span>
+    </div>
+    <div class="sidebar-nav">
+      <button class="nav-btn active" data-view="listings" data-role="all" onclick="showView('listings')" data-title="Explore"><i class="fas fa-search"></i><span>Explore</span></button>
+      <button class="nav-btn" data-view="dashboard" data-role="all" onclick="showView('dashboard')" data-title="Dashboard"><i class="fas fa-chart-bar"></i><span>Dashboard</span></button>
+      <button class="nav-btn" data-view="contracts" data-role="all" onclick="showView('contracts')" data-title="Contracts"><i class="fas fa-file-contract"></i><span>Contracts</span></button>
+      <div class="nav-divider"></div>
+      <button class="nav-btn" data-view="notaries" data-role="buyer,notary" onclick="showView('notaries')" data-title="Notaries"><i class="fas fa-user-tie"></i><span>Notaries</span></button>
+      <button class="nav-btn" data-view="myListings" data-role="seller,notary" onclick="showView('myListings')" data-title="My Listings"><i class="fas fa-store"></i><span>My Listings</span></button>
+      <button class="nav-btn" data-view="register" data-role="notary" onclick="showView('register')" data-title="Register Parcel"><i class="fas fa-pen"></i><span>Register Parcel</span></button>
+      <div class="nav-divider"></div>
+      <button class="nav-btn" data-view="admin" data-role="admin" onclick="showView('admin')" data-title="Admin"><i class="fas fa-shield-alt"></i><span>Admin</span></button>
+      <button class="nav-btn" data-view="profile" data-role="all" onclick="showView('profile')" data-title="Profile"><i class="fas fa-user"></i><span>Profile</span></button>
+      <button class="nav-btn danger nav-spacer" onclick="logoutUser()" data-title="Log out"><i class="fas fa-sign-out-alt"></i><span>Log out</span></button>
+      <div class="sidebar-bottom">
+        <button class="sidebar-collapse" onclick="toggleSidebarCollapse()" title="Collapse sidebar">
+          <i class="fas fa-chevron-left"></i><span>Collapse</span>
+        </button>
+        <button class="darkmode-btn" onclick="toggleDarkMode()" title="Toggle dark mode">
+          <i class="fas fa-moon" id="darkModeIcon"></i><span id="darkModeLabel">Dark mode</span>
+        </button>
+      </div>
+      <div class="sidebar-user" id="sidebarUser">
+        <div class="user-avatar" id="sidebarAvatar" style="overflow:hidden;">
+          <img id="sidebarAvatarImg" src="" alt="" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.style.display='none';document.getElementById('sidebarAvatarInitialsSpan').style.display='grid';">
+          <span id="sidebarAvatarInitialsSpan" style="display:grid;place-items:center;width:100%;height:100%;">?</span>
+        </div>
+        <div class="user-info">
+          <div class="un" id="sidebarUserName">User</div>
+          <div class="rl" id="sidebarUserRole">role</div>
+        </div>
+      </div>
+  </nav>
+
+  <main id="mainContent">
+
+  <!-- ====================== Explore / Listings ====================== -->
+  <section id="listingsView" class="panel">
+    <div class="flex gap-3" style="align-items: end; flex-wrap: wrap;">
+      <div style="flex:1;min-width:200px;">
+        <label class="text-sm" style="font-weight:700;color:var(--muted);">Filter by zone</label>
+        <input id="listingZone" placeholder="e.g. Bastos, Yaounde" style="margin:0;">
+      </div>
+      <button class="btn" onclick="loadListings()"><i class="fas fa-search"></i> Search listings</button>
+    </div>
+    <div id="listingsResults" class="grid mt-3"></div>
+  </section>
+
+  <!-- ====================== Auth / Landing Page ====================== -->
+  <section id="authView" aria-labelledby="authTitle">
+    <!-- Background -->
+    <div class="landing-bg"></div>
+    <!-- Floating decorative orbs -->
+    <div class="landing-orb landing-orb--1"></div>
+    <div class="landing-orb landing-orb--2"></div>
+    <div class="landing-orb landing-orb--3"></div>
+    <!-- Floating leaves -->
+    <div class="landing-leaf landing-leaf--1"></div>
+    <div class="landing-leaf landing-leaf--2"></div>
+    <div class="landing-leaf landing-leaf--3"></div>
+    <div class="landing-leaf landing-leaf--4"></div>
+    <div class="landing-leaf landing-leaf--5"></div>
+    <!-- Overlay -->
+    <div class="landing-overlay"></div>
+
+    <div class="landing-container">
+      <!-- Brand / Hero Section -->
+      <div class="landing-brand">
+        <div class="brand-icon"><i class="fas fa-mountain"></i></div>
+        <div class="trust-badge"><i class="fas fa-shield-alt"></i> Trusted land registry platform</div>
+        <h1>Land ownership,<br><span class="highlight">made transparent.</span></h1>
+        <p class="subtitle">Join a trusted space to discover land, connect with verified professionals, and manage every step with confidence.</p>
+        <ul class="landing-features">
+          <li><i class="fas fa-check-circle"></i> Browse available parcels across Cameroon</li>
+          <li><i class="fas fa-check-circle"></i> Connect with sellers and verified notaries</li>
+          <li><i class="fas fa-check-circle"></i> Detect overlapping claims before you buy</li>
+          <li><i class="fas fa-check-circle"></i> Keep your contracts organised in one place</li>
+        </ul>
+      </div>
+
+      <!-- Auth Card -->
+      <div class="landing-card">
+        <div class="card-heading">
+          <h2 id="authTitle">Welcome back</h2>
+          <p>Sign in to continue, or create your account.</p>
+        </div>
+        <div class="card-tabs" role="tablist" aria-label="Account access">
+          <button class="card-tab active" type="button" id="loginTab" role="tab" aria-selected="true" onclick="showAuthForm('login')">Sign in</button>
+          <button class="card-tab" type="button" id="registerTab" role="tab" aria-selected="false" onclick="showAuthForm('register')">Create account</button>
+        </div>
+        <div id="authStatus" class="auth-status" role="status" aria-live="polite"></div>
+
+        <form id="loginForm" class="auth-form active" onsubmit="loginUser(); return false;">
+          <div class="auth-field">
+            <label for="loginUsername">Username</label>
+            <div class="input-wrap"><i class="fas fa-user"></i><input id="loginUsername" autocomplete="username" required placeholder="Enter your username"></div>
+          </div>
+          <div class="auth-field">
+            <label for="loginPassword">Password</label>
+            <div class="input-wrap pw-field"><i class="fas fa-lock"></i><input id="loginPassword" type="password" autocomplete="current-password" required placeholder="Enter your password"><button class="pw-toggle" type="button" onclick="togglePassword('loginPassword', this)">Show</button></div>
+          </div>
+          <button class="btn-auth" type="submit" id="loginBtn"><i class="fas fa-arrow-right"></i> Sign in</button>
+          <p class="form-note">New here? Choose <strong onclick="showAuthForm('register')">Create account</strong> above to get started.</p>
+        </form>
+
+        <form id="registerForm" class="auth-form" onsubmit="registerUser(); return false;">
+          <div class="auth-field">
+            <label for="regUsername">Username</label>
+            <div class="input-wrap"><i class="fas fa-user"></i><input id="regUsername" autocomplete="username" required placeholder="Choose a username"></div>
+          </div>
+          <div class="auth-field">
+            <label for="regEmail">Email address</label>
+            <div class="input-wrap"><i class="fas fa-envelope"></i><input id="regEmail" type="email" autocomplete="email" required placeholder="you@example.com"></div>
+          </div>
+          <div class="auth-field">
+            <label for="regRole">I am joining as</label>
+            <select id="regRole"><option value="buyer">Buyer</option><option value="seller">Seller</option><option value="notary">Notary</option></select>
+          </div>
+          <div class="auth-field">
+            <label for="regPhone">Phone number</label>
+            <div class="input-wrap"><i class="fas fa-phone"></i><input id="regPhone" type="tel" autocomplete="tel" placeholder="+237 6XX XXX XXX"></div>
+          </div>
+          <div class="form-row">
+            <div class="auth-field">
+              <label for="regPassword">Password</label>
+              <div class="input-wrap pw-field"><i class="fas fa-lock"></i><input id="regPassword" type="password" autocomplete="new-password" required placeholder="Create a password"><button class="pw-toggle" type="button" onclick="togglePassword('regPassword', this)">Show</button></div>
+            </div>
+            <div class="auth-field">
+              <label for="regPasswordConfirm">Confirm</label>
+              <div class="input-wrap pw-field"><i class="fas fa-lock"></i><input id="regPasswordConfirm" type="password" autocomplete="new-password" required placeholder="Repeat password"><button class="pw-toggle" type="button" onclick="togglePassword('regPasswordConfirm', this)">Show</button></div>
+            </div>
+          </div>
+          <button class="btn-auth" type="submit" id="registerBtn"><i class="fas fa-user-plus"></i> Create account</button>
+          <p class="form-note">By creating an account, you can securely manage your Landclaim activity.</p>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====================== Dashboard ====================== -->
+  <section id="dashboardView" class="panel hidden">
+    <h2>Your dashboard</h2>
+    <p id="dashboardGreeting" class="text-muted">Welcome back.</p>
+    <div class="stats-grid mt-3" id="dashboardStats"></div>
+    <h3 class="mt-4">Recent contracts</h3>
+    <div id="dashboardContracts" class="grid"></div>
+    <h3 class="mt-4">Saved parcels</h3>
+    <div id="savedResults" class="grid"></div>
+  </section>
+
+  <!-- ====================== Profile ====================== -->
+  <section id="profileView" class="hidden">
+
+    <!-- Profile Card with Cover -->
+    <div class="profile-card">
+      <!-- Cover with gradient and decorative elements -->
+      <div class="profile-cover">
+        <div class="profile-cover-dots">
+          <span></span><span></span><span></span>
+          <span></span><span></span><span></span>
+          <span></span><span></span><span></span>
+        </div>
+        <div class="profile-cover-icon"><i class="fas fa-mountain"></i></div>
+      </div>
+
+      <!-- Avatar + Info row (overlapping cover) -->          <div class="profile-avatar-row">
+            <div class="profile-avatar-wrap" id="profileAvatarWrap">
+              <div class="profile-avatar" id="profileAvatar">
+                <img id="profileAvatarImg" src="" alt="" style="display:none;" onerror="this.style.display='none';document.getElementById('profileAvatarInitials').style.display='grid';">
+                <span id="profileAvatarInitials">?</span>
+              </div>
+              <div class="profile-avatar-upload" id="profileAvatarUpload" title="Upload profile picture">
+                <i class="fas fa-camera"></i>
+                <input type="file" accept="image/jpeg,image/png,image/gif,image/webp" id="profilePictureInput">
+              </div>
+            </div>
+        <div class="profile-header-text">
+          <h1 class="profile-name" id="profileDisplayName">User</h1>
+          <div class="profile-role-line">
+            <span class="profile-role-badge" id="profileRoleBadge">Buyer</span>
+            <span class="profile-verified-badge hidden" id="profileVerifiedBadge"><i class="fas fa-check-circle"></i> Verified</span>
+          </div>
+          <div class="profile-email-line">
+            <span><i class="fas fa-envelope"></i> <span id="profileEmailDisplay">—</span></span>
+            <span><i class="fas fa-calendar-alt"></i> Joined <span id="profileJoinDate">—</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Row (divider) -->
+      <div class="profile-stats" id="profileStats">
+        <div class="profile-stat">
+          <div class="profile-stat-value" id="statContracts">0</div>
+          <div class="profile-stat-label">Contracts</div>
+        </div>
+        <div class="profile-stat">
+          <div class="profile-stat-value" id="statListings">0</div>
+          <div class="profile-stat-label">Listings</div>
+        </div>
+        <div class="profile-stat">
+          <div class="profile-stat-value" id="statCompleted">0</div>
+          <div class="profile-stat-label">Completed</div>
+        </div>
+        <div class="profile-stat">
+          <div class="profile-stat-value" id="statPending">0</div>
+          <div class="profile-stat-label">Pending</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Profile Tabs + Content -->
+    <div class="profile-body">
+      <div class="profile-tabs">
+        <button class="profile-tab active" data-proftab="edit" onclick="switchProfileTab('edit')">
+          <i class="fas fa-user-edit"></i> Edit Profile
+        </button>
+        <button class="profile-tab" data-proftab="info" onclick="switchProfileTab('info')">
+          <i class="fas fa-info-circle"></i> Account Info
+        </button>
+      </div>
+
+      <!-- Edit Profile Tab -->
+      <div class="profile-tab-content active" id="profileTabEdit">
+        <div class="profile-status" id="profileStatus"></div>
+        <form onsubmit="saveProfile(); return false;">
+          <div class="profile-form-grid">
+            <div class="profile-field">
+              <label for="profileEmail">Email address</label>
+              <input id="profileEmail" type="email" required placeholder="your@email.com">
+            </div>
+            <div class="profile-field">
+              <label for="profilePhone">Phone number</label>
+              <input id="profilePhone" type="tel" placeholder="+237 6XX XXX XXX">
+            </div>
+          </div>
+          <div class="profile-form-actions">
+            <button class="btn" type="submit" id="profileSaveBtn">
+              <i class="fas fa-save"></i> <span>Save changes</span>
+            </button>
+            <button class="btn btn-muted" type="reset" onclick="loadProfile(); return false;">
+              <i class="fas fa-undo-alt"></i> Reset
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Account Info Tab -->
+      <div class="profile-tab-content" id="profileTabInfo">
+        <div class="profile-info-grid">
+          <div class="profile-info-card">
+            <div class="profile-info-card-header"><i class="fas fa-shield-alt"></i> Account Security</div>
+            <div class="profile-info-card-body">
+              <div class="profile-info-row">
+                <span class="profile-info-label">Status</span>
+                <span class="profile-info-value" id="infoActive"><span class="badge badge-active"><i class="fas fa-circle"></i> Active</span></span>
+              </div>
+              <div class="profile-info-row">
+                <span class="profile-info-label">Staff Access</span>
+                <span class="profile-info-value" id="infoStaff"><span class="chip">No</span></span>
+              </div>
+              <div class="profile-info-row">
+                <span class="profile-info-label">Verified</span>
+                <span class="profile-info-value" id="infoVerified"><span class="chip">No</span></span>
+              </div>
+            </div>
+          </div>
+          <div class="profile-info-card">
+            <div class="profile-info-card-header"><i class="fas fa-calendar-alt"></i> Membership</div>
+            <div class="profile-info-card-body">
+              <div class="profile-info-row">
+                <span class="profile-info-label">Member since</span>
+                <span class="profile-info-value" id="infoJoined">—</span>
+              </div>
+              <div class="profile-info-row">
+                <span class="profile-info-label">Role</span>
+                <span class="profile-info-value" id="infoRole">—</span>
+              </div>
+              <div class="profile-info-row">
+                <span class="profile-info-label">User ID</span>
+                <span class="profile-info-value" id="infoUserId">—</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ====================== Contracts ====================== -->
+  <section id="contractsView" class="panel hidden">
+    <h2>My contracts</h2>
+    <div id="contractsResults"></div>
+  </section>
+
+  <!-- ====================== Notary Directory ====================== -->
+  <section id="notariesView" class="panel hidden">
+    <h2>Notary directory</h2>
+    <div class="flex gap-3" style="align-items: end; flex-wrap: wrap;">
+      <div style="flex:1;min-width:200px;">
+        <label class="text-sm" style="font-weight:700;color:var(--muted);">Filter by zone</label>
+        <input id="notaryZone" placeholder="e.g. Bastos" style="margin:0;">
+      </div>
+      <button class="btn" onclick="loadNotaries()"><i class="fas fa-search"></i> Find notaries</button>
+    </div>
+    <div id="notariesResults" class="grid mt-3"></div>
+  </section>
+
+  <!-- ====================== My Listings (Seller / Notary) ====================== -->
+  <section id="myListingsView" class="panel hidden">
+    <h2>My Parcel Listings</h2>
+    <p class="text-muted">Manage your parcels — mark them for sale, set prices, track contracts, and upload documents.</p>
+    <div id="myListingsStatus" class="auth-status"></div>
+    <div class="flex gap-3" style="align-items: end; flex-wrap: wrap;">
+      <div style="flex:1;min-width:200px;">
+        <label class="text-sm" style="font-weight:700;color:var(--muted);">Filter your parcels</label>
+        <input id="myListingSearch" placeholder="Filter by zone, owner, or ID..." style="margin:0;" onkeydown="if(event.key==='Enter') renderMyListings()">
+      </div>
+      <button class="btn btn-outline" onclick="renderMyListings()"><i class="fas fa-search"></i> Filter</button>
+      <button class="btn btn-muted" onclick="loadMyListings()"><i class="fas fa-sync"></i> Refresh</button>
+    </div>
+    <div id="myListingsResults" class="grid mt-3"></div>
+  </section>
+
+  <!-- ====================== Admin Dashboard ====================== -->
+  <section id="adminView" class="panel hidden">
+    <div class="flex gap-3" style="align-items:center;justify-content:space-between;flex-wrap:wrap;">
+      <div>
+        <h2>Admin Dashboard</h2>
+        <p class="text-muted">System-wide overview — disputes, user management, and hotspot zones.</p>
+      </div>
+      <div class="flex gap-2">
+        <button class="btn btn-outline btn-sm" onclick="loadAdminDashboard()"><i class="fas fa-sync"></i> Refresh</button>
+      </div>
+    </div>
+    <div id="adminStats" class="stats-grid mt-3"></div>
+
+    <!-- Tabs -->
+    <div class="flex gap-2 mt-4" style="border-bottom:2px solid var(--line-light);padding-bottom:8px;">
+      <button class="btn btn-sm" id="adminTabDisputes" onclick="showAdminTab('disputes')" style="background:var(--brand);color:white;">Disputes</button>
+      <button class="btn btn-sm btn-outline" id="adminTabHotspots" onclick="showAdminTab('hotspots')">Hotspots</button>
+      <button class="btn btn-sm btn-outline" id="adminTabUsers" onclick="showAdminTab('users')">Users</button>
+      <button class="btn btn-sm btn-outline" id="adminTabAudit" onclick="showAdminTab('audit')">Audit</button>
+    </div>
+
+    <!-- Disputes tab -->
+    <div id="adminDisputesTab" class="mt-3">
+      <h3>Open disputes</h3>
+      <div class="table-wrap" id="adminDisputes"></div>
+    </div>
+
+    <!-- Hotspots tab -->
+    <div id="adminHotspotsTab" class="mt-3 hidden">
+      <h3>Hotspot zones</h3>
+      <div class="table-wrap" id="adminHotspots"></div>
+    </div>
+
+    <!-- Users tab -->
+    <div id="adminUsersTab" class="mt-3 hidden">
+      <div class="flex gap-3" style="align-items:end;flex-wrap:wrap;">
+        <div style="flex:1;min-width:160px;">
+          <label class="text-sm" style="font-weight:700;color:var(--muted);">Filter by role</label>
+          <select id="adminUserRoleFilter" onchange="loadAdminUsers()" style="margin:0;">
+            <option value="">All roles</option>
+            <option value="buyer">Buyers</option>
+            <option value="seller">Sellers</option>
+            <option value="notary">Notaries</option>
+          </select>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="loadAdminUsers()"><i class="fas fa-sync"></i> Refresh users</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>User</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Verified</th>
+            <th>Staff</th>
+            <th>Active</th>
+            <th>Joined</th>
+            <th>Actions</th>
+          </tr></thead>
+          <tbody id="adminUsersBody"></tbody>
+        </table>
+      </div>
+      <div id="adminUsersStatus" class="text-sm text-muted mt-2"></div>
+    </div>
+
+    <!-- Audit tab -->
+    <div id="adminAuditTab" class="mt-3 hidden">
+      <h3>Blockchain Audit Ledger</h3>
+      <p class="text-muted">Tamper-evident, append-only audit trail of all marketplace events.</p>
+      <div class="flex gap-2 mt-3">
+        <button class="btn btn-sm btn-outline" onclick="loadAdminAudit()"><i class="fas fa-link"></i> Load audit chain</button>
+        <button class="btn btn-sm btn-outline" onclick="validateAdminAudit()"><i class="fas fa-check-circle"></i> Validate chain</button>
+      </div>
+      <div id="adminAuditResults" class="mt-3"></div>
+    </div>
+  </section>
+
+  <!-- ====================== Parcel Registration (Notary) ====================== -->
+  <section id="registerView" class="panel hidden">
+    <h2>Register a new parcel</h2>
+    <p class="text-muted">Notaries can register parcels and draw boundaries on the map.</p>
+    <div id="registerStatus" class="auth-status"></div>
+    <form onsubmit="registerParcel(); return false;" style="max-width:700px;">
+      <div class="form-row">
+        <div class="form-group"><label for="regOwnerName">Owner name *</label><input id="regOwnerName" required placeholder="Full name of the owner"></div>
+        <div class="form-group"><label for="regOwnerPhone">Owner phone</label><input id="regOwnerPhone" type="tel" placeholder="+237 6XX XXX XXX"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label for="regZone">Zone *</label><input id="regZone" required placeholder="e.g. Bastos, Yaounde"></div>
+        <div class="form-group"><label for="regSize">Size (sqm) *</label><input id="regSize" type="number" step="0.1" required placeholder="e.g. 500"></div>
+      </div>
+      <div class="form-group">
+        <label>Boundary *</label>
+        <div id="registerMap" style="height:320px;border-radius:6px;border:1.5px solid var(--line);"></div>
+        <div class="coord-info"><strong>Drawn polygon:</strong> <span id="coordDisplay">None yet — use the draw tool on the map</span></div>
+      </div>
+      <button class="btn btn-block" type="submit" id="registerParcelBtn">Register parcel</button>
+    </form>
+  </section>
+
+</main>
+</div> <!-- end app-layout -->
+
+<!-- ====================== Scripts ====================== -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+<script>
+// ====================== State ======================
+let accessToken = localStorage.getItem('accessToken') || null;
+let currentParcel = null;
+let currentProfile = null;
+let registerMap = null;
+let registerDrawnItems = null;
+let parcelDetailMap = null;
+
+// ====================== Toast System ======================
+function toast(message, type = 'info', duration = 4000) {
+  const container = document.getElementById('toastContainer');
+  const icons = { success: 'fa-check-circle', error: 'fa-times-circle', warning: 'fa-exclamation-triangle', info: 'fa-info-circle' };
+  const el = document.createElement('div');
+  el.className = `toast toast-${type}`;
+  el.innerHTML = `
+    <span class="toast-icon"><i class="fas ${icons[type] || 'fa-info-circle'}"></i></span>
+    <span class="toast-content">${message}</span>
+    <button class="toast-close" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
+  `;
+  container.appendChild(el);
+  setTimeout(() => {
+    el.style.animation = 'slideOut .25s ease forwards';
+    setTimeout(() => el.remove(), 300);
+  }, duration);
+}
+
+// ====================== Auth Helpers ======================
+function authHeaders() { return accessToken ? { Authorization: 'Bearer ' + accessToken } : {}; }
+function savedParcels() { return JSON.parse(localStorage.getItem('savedParcels') || '[]'); }
+function saveParcel(id) { const s = savedParcels(); if (!s.includes(id)) { s.push(id); localStorage.setItem('savedParcels', JSON.stringify(s)); toast('Parcel saved to your dashboard.', 'success'); loadDashboard(); } }
+function removeSavedParcel(id) { localStorage.setItem('savedParcels', JSON.stringify(savedParcels().filter(x => x !== id))); toast('Parcel removed from saved.'); loadDashboard(); }
+
+// ====================== Init ======================
+window.onload = async () => {
+  initDarkMode();
+  initSidebarCollapse();
+  if (accessToken && await loadProfile()) {
+    openAuthenticatedApp(false);
+  } else {
+    logoutUser(false);
+  }
+};
+
+// ====================== Role-Based Navigation ======================
+function updateNavForRole() {
+  if (!currentProfile) return;
+  const role = currentProfile.role;
+  const isAdmin = currentProfile.is_staff || currentProfile.is_superuser || false;
+  document.querySelectorAll('.nav-btn[data-role]').forEach(btn => {
+    const allowed = btn.dataset.role;
+    // Admin button is special: shown to staff/superusers regardless of role
+    if (allowed === 'admin') {
+      btn.classList.toggle('hidden', !isAdmin);
+    } else if (allowed === 'all' || allowed.split(',').includes(role)) {
+      btn.classList.remove('hidden');
+    } else {
+      btn.classList.add('hidden');
+    }
+  });
+}
+
+// ====================== View Management ======================
+function showView(name) {
+  if (!accessToken) name = 'auth';
+  const views = ['listings','auth','dashboard','profile','contracts','notaries','register','myListings','admin'];
+  views.forEach(v => {
+    const el = document.getElementById(v + 'View');
+    if (el) el.classList.toggle('hidden', v !== name);
+  });
+  document.querySelectorAll('.nav-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.view === name);
+  });
+  if (name === 'dashboard') loadDashboard();
+  if (name === 'register') initRegisterMap();
+  if (name === 'myListings') loadMyListings();
+  if (name === 'admin') loadAdminDashboard();
+}
+
+function openAuthenticatedApp() {
+  document.getElementById('appNav').classList.remove('hidden');
+  document.getElementById('mainContent').classList.remove('auth-mode');
+  showView('listings');
+  loadListings();
+  loadDashboard();
+  loadProfile();  // calls updateNavForRole() internally
+}
+
+function logoutUser(showMsg = true) {
+  accessToken = null;
+  currentProfile = null;
+  localStorage.removeItem('accessToken');
+  document.getElementById('appNav').classList.add('hidden');
+  document.getElementById('sidebarBackdrop').classList.remove('open');
+  document.getElementById('mainContent').classList.add('auth-mode');
+  document.getElementById('authStatus').textContent = showMsg ? 'You have been logged out.' : '';
+  showView('auth');
+  if (showMsg) toast('You have been logged out.', 'info');
+}
+
+function showAuthForm(name) {
+  const isLogin = name === 'login';
+  document.getElementById('loginForm').classList.toggle('active', isLogin);
+  document.getElementById('registerForm').classList.toggle('active', !isLogin);
+  document.getElementById('loginTab').classList.toggle('active', isLogin);
+  document.getElementById('registerTab').classList.toggle('active', !isLogin);
+  document.getElementById('loginTab').setAttribute('aria-selected', isLogin);
+  document.getElementById('registerTab').setAttribute('aria-selected', !isLogin);
+  document.getElementById('authStatus').textContent = '';
+}
+
+function togglePassword(inputId, btn) {
+  const input = document.getElementById(inputId);
+  const hidden = input.type === 'password';
+  input.type = hidden ? 'text' : 'password';
+  btn.textContent = hidden ? 'Hide' : 'Show';
+}
+
+// ====================== Sidebar ======================
+// ====================== Sidebar Toggle (mobile) ======================
+function toggleSidebar() {
+  const sidebar = document.getElementById('appNav');
+  const backdrop = document.getElementById('sidebarBackdrop');
+  sidebar.classList.toggle('open');
+  backdrop.classList.toggle('open', sidebar.classList.contains('open'));
+}
+
+function closeSidebarOnMobile() {
+  const sidebar = document.getElementById('appNav');
+  const backdrop = document.getElementById('sidebarBackdrop');
+  sidebar.classList.remove('open');
+  backdrop.classList.remove('open');
+}
+
+// ====================== Sidebar Collapse (desktop) ======================
+function toggleSidebarCollapse() {
+  const sidebar = document.getElementById('appNav');
+  const btn = document.querySelector('.sidebar-collapse');
+  sidebar.classList.toggle('collapsed');
+  const collapsed = sidebar.classList.contains('collapsed');
+  localStorage.setItem('sidebarCollapsed', collapsed);
+  btn.title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+  // Close mobile sidebar backdrop if open
+  document.getElementById('sidebarBackdrop').classList.remove('open');
+}
+
+function initSidebarCollapse() {
+  const collapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+  if (collapsed && window.innerWidth > 768) {
+    document.getElementById('appNav').classList.add('collapsed');
+    document.querySelector('.sidebar-collapse').title = 'Expand sidebar';
+  }
+}
+
+// ====================== Dark Mode ======================
+function toggleDarkMode() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  const next = isDark ? 'light' : 'dark';
+  html.setAttribute('data-theme', next);
+  localStorage.setItem('theme', next);
+  updateDarkModeUI(next);
+}
+
+function updateDarkModeUI(theme) {
+  const icon = document.getElementById('darkModeIcon');
+  const label = document.getElementById('darkModeLabel');
+  if (theme === 'dark') {
+    icon.className = 'fas fa-sun';
+    label.textContent = 'Light mode';
+  } else {
+    icon.className = 'fas fa-moon';
+    label.textContent = 'Dark mode';
+  }
+}
+
+function initDarkMode() {
+  const saved = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-theme', saved);
+  updateDarkModeUI(saved);
+}
+
+// ====================== API Calls with Loading States ======================
+async function apiCall(url, options = {}) {
+  const contentType = options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' };
+  const headers = { ...authHeaders(), ...contentType, ...options.headers };
+  try {
+    const res = await fetch(url, { ...options, headers });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const msg = data.detail || Object.values(data).flat().join(' ') || `Request failed (${res.status})`;
+      throw new Error(msg);
+    }
+    return data;
+  } catch (e) {
+    if (e.name !== 'Error' && !e.message.includes('Request failed')) throw e;
+    throw e;
+  }
+}
+
+function showLoading(containerId) {
+  const el = document.getElementById(containerId);
+  if (el) el.innerHTML = '<div class="loading-wrap"><div class="spinner"></div><span>Loading...</span></div>';
+}
+
+function showError(containerId, message, retryFn = null) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = `
+    <div class="error-state">
+      <div class="error-icon"><i class="fas fa-exclamation-triangle"></i></div>
+      <p>${message}</p>
+      ${retryFn ? '<button class="btn btn-sm mt-2" onclick="(' + retryFn + ')()">Try again</button>' : ''}
+    </div>`;
+}
+
+function showEmpty(containerId, message, icon = 'fa-inbox') {
+  const el = document.getElementById(containerId);
+  if (el) el.innerHTML = `<div class="empty-state"><div class="empty-icon"><i class="fas ${icon}"></i></div><p>${message}</p></div>`;
+}
+
+// ====================== Auth Actions ======================
+async function registerUser() {
+  const status = document.getElementById('authStatus');
+  const btn = document.getElementById('registerBtn');
+  btn.disabled = true;
+  btn.textContent = 'Creating account...';
+  const payload = {
+    username: document.getElementById('regUsername').value.trim(),
+    email: document.getElementById('regEmail').value.trim(),
+    password: document.getElementById('regPassword').value,
+    password_confirm: document.getElementById('regPasswordConfirm').value,
+    role: document.getElementById('regRole').value,
+    phone_number: document.getElementById('regPhone').value.trim(),
+  };
+  try {
+    const res = await fetch('/api/auth/register/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(Object.values(data).flat().join(' ') || 'Unable to create your account.');
+    document.getElementById('loginUsername').value = payload.username;
+    document.getElementById('loginPassword').value = '';
+    showAuthForm('login');
+    status.className = 'auth-status success';
+    status.innerHTML = '<i class="fas fa-check-circle"></i> Account created! Please sign in.';
+    toast('Account created successfully!', 'success');
+  } catch (e) {
+    status.className = 'auth-status error';
+    status.textContent = e.message || 'Unable to create account.';
+    toast(e.message || 'Registration failed.', 'error');
+  }
+  btn.disabled = false;
+  btn.textContent = 'Create account';
+}
+
+async function loginUser() {
+  const status = document.getElementById('authStatus');
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true;
+  btn.textContent = 'Signing in...';
+  const payload = {
+    username: document.getElementById('loginUsername').value.trim(),
+    password: document.getElementById('loginPassword').value,
+  };
+  try {
+    const res = await fetch('/api/token/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const data = await res.json();
+    if (!res.ok || !data.access) throw new Error(data.detail || 'Incorrect username or password.');
+    accessToken = data.access;
+    localStorage.setItem('accessToken', accessToken);
+    status.className = 'auth-status success';
+    status.innerHTML = '<i class="fas fa-check-circle"></i> Signed in successfully.';
+    toast('Welcome back, ' + payload.username + '!', 'success');
+    openAuthenticatedApp();
+  } catch (e) {
+    status.className = 'auth-status error';
+    status.textContent = e.message || 'Unable to sign in.';
+    toast(e.message || 'Login failed.', 'error');
+  }
+  btn.disabled = false;
+  btn.textContent = 'Sign in';
+}
+
+// ====================== Profile ======================
+
+function switchProfileTab(tab) {
+  document.querySelectorAll('.profile-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.profile-tab-content').forEach(c => c.classList.remove('active'));
+  const tabBtn = document.querySelector(`.profile-tab[data-proftab="${tab}"]`);
+  if (tabBtn) tabBtn.classList.add('active');
+  const contentId = 'profileTab' + tab.charAt(0).toUpperCase() + tab.slice(1);
+  const content = document.getElementById(contentId);
+  if (content) content.classList.add('active');
+}
+
+async function loadProfileStats() {
+  try {
+    const contractsData = await apiCall('/api/contracts/mine/');
+    const contracts = contractsData.results || contractsData;
+    const total = Array.isArray(contracts) ? contracts.length : 0;
+    const completed = Array.isArray(contracts) ? contracts.filter(c => c.status === 'completed').length : 0;
+    const pending = Array.isArray(contracts) ? contracts.filter(c => c.status === 'pending' || c.status === 'in_progress').length : 0;
+    document.getElementById('statContracts').textContent = total;
+    document.getElementById('statCompleted').textContent = completed;
+    document.getElementById('statPending').textContent = pending;
+    // Only fetch listings for sellers (403 for others)
+    if (currentProfile && currentProfile.role === 'seller') {
+      try {
+        const listingsData = await apiCall('/api/seller/listings/');
+        const listings = listingsData.results || listingsData;
+        document.getElementById('statListings').textContent = Array.isArray(listings) ? listings.length : 0;
+      } catch(e) {
+        document.getElementById('statListings').textContent = '\u2014';
+      }
+    } else {
+      document.getElementById('statListings').textContent = '\u2014';
+    }
+  } catch(e) {}
+}
+
+async function loadProfile() {
+  try {
+    const data = await apiCall('/api/auth/me/');
+    currentProfile = data;
+
+    // Profile header
+    const initial = data.username ? data.username.charAt(0).toUpperCase() : '?';
+    const initialsEl = document.getElementById('profileAvatarInitials');
+    const imgEl = document.getElementById('profileAvatarImg');
+    initialsEl.textContent = initial;
+    if (data.profile_picture) {
+      imgEl.src = data.profile_picture;
+      imgEl.style.display = 'block';
+      initialsEl.style.display = 'none';
+    } else {
+      imgEl.style.display = 'none';
+      initialsEl.style.display = 'grid';
+    }
+    document.getElementById('profileDisplayName').textContent = data.username || 'User';
+    const roleDisplay = data.role ? data.role.charAt(0).toUpperCase() + data.role.slice(1) : 'Buyer';
+    document.getElementById('profileRoleBadge').textContent = roleDisplay;
+    const verifiedBadge = document.getElementById('profileVerifiedBadge');
+    if (data.is_verified) {
+      verifiedBadge.classList.remove('hidden');
+    } else {
+      verifiedBadge.classList.add('hidden');
+    }
+    document.getElementById('profileEmailDisplay').textContent = data.email || 'No email';
+    const joined = data.date_joined
+      ? new Date(data.date_joined).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+      : '\u2014';
+    document.getElementById('profileJoinDate').textContent = joined;
+
+    // Form fields
+    document.getElementById('profileEmail').value = data.email || '';
+    document.getElementById('profilePhone').value = data.phone_number || '';
+
+    // Account info tab
+    document.getElementById('infoRole').textContent = roleDisplay;
+    document.getElementById('infoJoined').textContent = joined;
+    document.getElementById('infoUserId').textContent = data.user_id || '\u2014';
+    const yesBadge = '<span class="badge badge-active"><i class="fas fa-check"></i> Yes</span>';
+    const noChip = '<span class="chip">No</span>';
+    document.getElementById('infoVerified').innerHTML = data.is_verified ? yesBadge : noChip;
+    document.getElementById('infoStaff').innerHTML = data.is_staff ? yesBadge : noChip;
+
+    // Dashboard greeting
+    document.getElementById('dashboardGreeting').innerHTML = '<i class="fas fa-smile"></i> Welcome back, ' + (data.username || '');
+
+    // Sidebar
+    document.getElementById('sidebarUserName').textContent = data.username || 'User';
+    document.getElementById('sidebarUserRole').textContent = roleDisplay + (data.is_verified ? ' \u2713' : '');
+    const sidebarAvatar = document.getElementById('sidebarAvatar');
+    const sidebarImg = document.getElementById('sidebarAvatarImg');
+    const sidebarInitials = document.getElementById('sidebarAvatarInitialsSpan');
+    sidebarInitials.textContent = initial;
+    if (data.profile_picture) {
+      sidebarImg.src = data.profile_picture;
+      sidebarImg.style.display = 'block';
+      sidebarInitials.style.display = 'none';
+    } else {
+      sidebarImg.style.display = 'none';
+      sidebarInitials.style.display = 'grid';
+    }
+    document.getElementById('authStatus').textContent = 'Signed in as ' + (data.username || '') + ' (' + roleDisplay + ')';
+
+    // Stats
+    loadProfileStats();
+
+    updateNavForRole();
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+async function saveProfile() {
+  const btn = document.getElementById('profileSaveBtn');
+  const status = document.getElementById('profileStatus');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+  status.className = 'profile-status';
+  status.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+  try {
+    await apiCall('/api/auth/me/', {
+      method: 'PATCH',
+      body: JSON.stringify({
+        email: document.getElementById('profileEmail').value,
+        phone_number: document.getElementById('profilePhone').value,
+      }),
+    });
+    status.innerHTML = '<i class="fas fa-check-circle"></i> Profile updated successfully.';
+    status.className = 'profile-status success';
+    toast('Profile updated!', 'success');
+    loadProfile();
+  } catch (e) {
+    status.innerHTML = '<i class="fas fa-times-circle"></i> ' + e.message;
+    status.className = 'profile-status error';
+    toast('Failed to save profile: ' + e.message, 'error');
+  }
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fas fa-save"></i> <span>Save changes</span>';
+}
+
+// ====================== Profile Picture Upload ======================
+const profilePicInput = document.getElementById('profilePictureInput');
+if (profilePicInput) {
+  profilePicInput.addEventListener('change', async function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast('Image too large. Maximum size is 5MB.', 'error');
+      e.target.value = '';
+      return;
+    }
+    if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)) {
+      toast('Please select a valid image file (JPEG, PNG, GIF, or WebP).', 'error');
+      e.target.value = '';
+      return;
+    }
+    const uploadBtn = document.getElementById('profileAvatarUpload');
+    const originalHtml = uploadBtn.innerHTML;
+    uploadBtn.innerHTML = '<div class="spinner spinner-sm"></div>';
+    uploadBtn.classList.add('loading');
+    try {
+      const formData = new FormData();
+      formData.append('profile_picture', file);
+      await apiCall('/api/auth/me/', {
+        method: 'PATCH',
+        body: formData,
+      });
+      toast('Profile picture updated!', 'success');
+      loadProfile();
+    } catch (e) {
+      toast('Failed to upload picture: ' + e.message, 'error');
+    }
+    uploadBtn.innerHTML = originalHtml;
+    uploadBtn.classList.remove('loading');
+    e.target.value = '';
+  });
+}
+
+// ====================== Listings ======================
+async function loadListings() {
+  const zone = document.getElementById('listingZone').value.trim();
+  const container = document.getElementById('listingsResults');
+  showLoading('listingsResults');
+  try {
+    const data = await apiCall('/api/parcels/listings/' + (zone ? '?zone=' + encodeURIComponent(zone) : ''));
+    const results = data.results || data;
+    if (!results || !results.length) { showEmpty('listingsResults', 'No parcels available in this zone.', 'fa-map-marked-alt'); return; }
+    container.innerHTML = results.map(p => `
+      <div class="card">
+        <div class="flex gap-2" style="align-items:start;justify-content:space-between;">
+          <h4>${p.parcel_id}</h4>
+          <span class="badge badge-${p.status}">${p.status}</span>
+        </div>
+        <div class="row"><span>Owner</span><span>${p.owner_name}</span></div>
+        <div class="row"><span>Zone</span><span>${p.zone}</span></div>
+        <div class="row"><span>Size</span><span>${p.size_sqm.toLocaleString()} m²</span></div>
+        <div class="row"><span>Price</span><span>${p.asking_price ? 'FCFA ' + Number(p.asking_price).toLocaleString() : 'Contact seller'}</span></div>
+        ${p.seller_name ? `<div class="row"><span>Seller</span><span>${p.seller_name}</span></div>` : ''}
+        <div class="card-actions">
+          <button class="btn btn-sm" onclick="viewParcel(${p.id})">View details</button>
+          <button class="btn btn-sm btn-outline" onclick="saveParcel(${p.id})">Save</button>
+        </div>
+      </div>
+    `).join('');
+  } catch (e) {
+    showError('listingsResults', e.message, 'loadListings');
+    toast('Failed to load listings: ' + e.message, 'error');
+  }
+}
+
+async function viewParcel(id) {
+  const container = document.getElementById('listingsResults');
+  showLoading('listingsResults');
+  try {
+    const parcel = await apiCall('/api/parcels/' + id + '/');
+    currentParcel = parcel;
+    container.innerHTML = `
+      <div class="card" style="grid-column:1/-1;">
+        <div class="flex gap-2" style="align-items:start;justify-content:space-between;">
+          <div>
+            <h3>${parcel.parcel_id}</h3>
+            <p>${parcel.owner_name} · ${parcel.zone} · ${parcel.size_sqm.toLocaleString()} m²</p>
+          </div>
+          <span class="badge badge-${parcel.status}">${parcel.status}</span>
+        </div>
+        <div class="detail-grid mt-3">
+          <div>
+            <dl>
+              <div class="detail-group"><dt>Status</dt><dd><span class="badge badge-${parcel.status}">${parcel.status}</span></dd></div>
+              <div class="detail-group"><dt>For sale</dt><dd>${parcel.for_sale ? '<i class="fas fa-check-circle" style="color:var(--success)"></i> Yes' : '<i class="fas fa-times-circle" style="color:var(--danger)"></i> No'}</dd></div>
+              ${parcel.asking_price ? '<div class="detail-group"><dt>Price</dt><dd>FCFA ' + Number(parcel.asking_price).toLocaleString() + '</dd></div>' : ''}
+              <div class="detail-group"><dt>Seller contact</dt><dd>${parcel.seller_contact ? parcel.seller_contact.phone_number + (parcel.seller_contact.email ? ' · ' + parcel.seller_contact.email : '') : 'N/A'}</dd></div>
+              <div class="detail-group"><dt>Notary</dt><dd>${parcel.notary_contact ? parcel.notary_contact.full_name + ' (' + parcel.notary_contact.office_zone + ')' : 'N/A'}</dd></div>
+            </dl>
+          </div>
+          <div>
+            <dl>
+              <div class="detail-group"><dt>Owner</dt><dd>${parcel.owner_name}</dd></div>
+              <div class="detail-group"><dt>Registered at</dt><dd>${new Date(parcel.registered_at).toLocaleDateString()}</dd></div>
+              <div class="detail-group"><dt>Overlapping claims</dt><dd>${parcel.overlapping_with && parcel.overlapping_with.length ? parcel.overlapping_with.map(o => '<span class="chip chip-brand">' + o.parcel_id + ' (' + o.overlap_area_sqm + ' m²)</span>').join(' ') : 'None'}</dd></div>
+              <div class="detail-group"><dt>Open disputes</dt><dd>${parcel.open_disputes || 0}</dd></div>
+            </dl>
+          </div>
+        </div>
+        <div id="parcelMap" style="height:300px;border-radius:6px;border:1.5px solid var(--line);margin-top:12px;"></div>
+        <div class="card-actions mt-3">
+          <button class="btn" onclick="createContract()"><i class="fas fa-briefcase"></i> I'm interested</button>
+          <button class="btn btn-outline" onclick="saveParcel(${parcel.id})">Save parcel</button>
+          <button class="btn btn-muted" onclick="loadListings()"><i class="fas fa-arrow-left"></i> Back to listings</button>
+        </div>
+      </div>
+    `;
+    // Clean up previous map instance to prevent memory leaks
+    if (parcelDetailMap) { parcelDetailMap.remove(); parcelDetailMap = null; }
+    // Initialize parcel detail map
+    setTimeout(() => initParcelMap(parcel), 100);
+  } catch (e) {
+    showError('listingsResults', e.message, 'loadListings');
+    toast('Failed to load parcel details.', 'error');
+  }
+}
+
+function initParcelMap(parcel) {
+  if (typeof L === 'undefined') { document.getElementById('parcelMap').innerHTML = '<p class="text-muted text-center">Map service unavailable.</p>'; return; }
+  const mapEl = document.getElementById('parcelMap');
+  if (!mapEl) return;
+  parcelDetailMap = L.map(mapEl, { scrollWheelZoom: false, zoomControl: true }).setView([3.86, 11.50], 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(parcelDetailMap);
+  const coords = Array.isArray(parcel.boundary) ? parcel.boundary : [];
+  const latLngs = coords.filter(p => Array.isArray(p) && p.length >= 2 && Number.isFinite(+p[0]) && Number.isFinite(+p[1])).map(([lat, lng]) => [+lat, +lng]);
+  if (latLngs.length >= 3) {
+    const poly = L.polygon(latLngs, { color: '#176b52', weight: 3, fillColor: '#34a879', fillOpacity: .22 }).addTo(parcelDetailMap);
+    parcelDetailMap.fitBounds(poly.getBounds(), { padding: [24, 24], maxZoom: 16 });
+  }
+  setTimeout(() => parcelDetailMap.invalidateSize(), 100);
+}
+
+async function createContract() {
+  if (!accessToken || !currentParcel) return;
+  try {
+    const data = await apiCall('/api/contracts/mine/', {
+      method: 'POST',
+      body: JSON.stringify({ parcel_id: currentParcel.id, notes: 'Interested in this parcel' }),
+    });
+    toast('Contract created successfully! Check your contracts.', 'success');
+    loadContracts();
+  } catch (e) {
+    toast('Failed to create contract: ' + e.message, 'error');
+  }
+}
+
+// ====================== Contracts ======================
+async function loadContracts() {
+  if (!accessToken) return;
+  const container = document.getElementById('contractsResults');
+  showLoading('contractsResults');
+  try {
+    const data = await apiCall('/api/contracts/mine/');
+    const results = data.results || data;
+    if (!results || !results.length) { showEmpty('contractsResults', 'You have no contracts yet. Explore parcels to get started.', 'fa-file-contract'); return; }
+    container.innerHTML = results.map(c => `
+      <div class="card">
+        <div class="flex gap-2" style="align-items:start;justify-content:space-between;">
+          <h4>${c.parcel_summary ? c.parcel_summary.parcel_id : 'Contract #' + c.id}</h4>
+          <span class="badge badge-${c.status}">${c.status.replace('_', ' ')}</span>
+        </div>
+        <div class="row"><span>Parcel</span><span>${c.parcel_summary ? c.parcel_summary.parcel_id + ' (' + c.parcel_summary.zone + ')' : 'N/A'}</span></div>
+        <div class="row"><span>Buyer</span><span>${c.buyer_name || 'N/A'}</span></div>
+        <div class="row"><span>Seller</span><span>${c.seller_name || 'N/A'}</span></div>
+        <div class="row"><span>Created</span><span>${new Date(c.created_at).toLocaleDateString()}</span></div>
+        ${c.notes ? '<div class="row"><span>Notes</span><span class="text-muted">' + c.notes + '</span></div>' : ''}
+        <div class="card-actions">
+          ${renderContractActions(c)}
+        </div>
+      </div>
+    `).join('');
+  } catch (e) {
+    showError('contractsResults', e.message, 'loadContracts');
+  }
+}
+
+function renderContractActions(c) {
+  let html = '';
+  // Buyer can cancel pending contracts
+  if (currentProfile && c.buyer_name === currentProfile.username && c.status === 'pending') {
+    html += '<button class="btn btn-sm btn-danger-outline" onclick="updateContract(' + c.id + ', \'cancelled\')">Cancel</button>';
+  }
+  // Seller can mark as in_progress or completed
+  if (currentProfile && c.seller_name === currentProfile.username) {
+    if (c.status === 'pending') html += '<button class="btn btn-sm btn-outline" onclick="updateContract(' + c.id + ', \'in_progress\')">Accept <i class="fas fa-arrow-right"></i> In progress</button>';
+    if (c.status === 'in_progress') html += '<button class="btn btn-sm" onclick="updateContract(' + c.id + ', \'completed\')"><i class="fas fa-check-circle"></i> Mark completed</button>';
+  }
+  return html || '<span class="text-sm text-muted">No actions available</span>';
+}
+
+async function updateContract(id, status) {
+  try {
+    await apiCall('/api/contracts/' + id + '/', { method: 'PATCH', body: JSON.stringify({ status }) });
+    toast('Contract updated: ' + status.replace('_', ' '), 'success');
+    loadContracts();
+    loadDashboard();
+  } catch (e) {
+    toast('Failed to update contract: ' + e.message, 'error');
+  }
+}
+
+// ====================== Dashboard ======================
+async function loadDashboard() {
+  if (!accessToken) return;
+  try {
+    const contractsData = await apiCall('/api/contracts/mine/');
+    const contracts = contractsData.results || contractsData;
+    const saved = savedParcels();
+    document.getElementById('dashboardStats').innerHTML = `
+      <div class="stat-card"><div class="stat-icon"><i class="fas fa-file-contract"></i></div><div class="stat-value">${contracts.length}</div><div class="stat-label">Total contracts</div></div>
+      <div class="stat-card"><div class="stat-icon"><i class="fas fa-bookmark"></i></div><div class="stat-value">${saved.length}</div><div class="stat-label">Saved parcels</div></div>
+      <div class="stat-card stat-warning"><div class="stat-icon"><i class="fas fa-clock"></i></div><div class="stat-value">${contracts.filter(c => c.status === 'pending').length}</div><div class="stat-label">Pending</div></div>
+      <div class="stat-card"><div class="stat-icon"><i class="fas fa-check-circle"></i></div><div class="stat-value">${contracts.filter(c => c.status === 'completed').length}</div><div class="stat-label">Completed</div></div>
+    `;
+    if (contracts.length) {
+      document.getElementById('dashboardContracts').innerHTML = contracts.slice(0, 4).map(c => `
+        <div class="card">
+          <h4>${c.parcel_summary ? c.parcel_summary.parcel_id : 'Contract #' + c.id}</h4>
+          <p class="text-muted">${c.parcel_summary ? c.parcel_summary.zone : ''}</p>
+          <p><span class="badge badge-${c.status}">${c.status.replace('_', ' ')}</span></p>
+        </div>
+      `).join('') + (contracts.length > 4 ? '<p class="text-sm text-muted mt-2"><a href="#" onclick="showView(\'contracts\');return false;">View all contracts <i class="fas fa-arrow-right" style="font-size:.7rem"></i></a></p>' : '');
+    } else {
+      document.getElementById('dashboardContracts').innerHTML = '<p class="text-muted">No contracts yet.</p>';
+    }
+    if (saved.length) {
+      document.getElementById('savedResults').innerHTML = saved.map(id => `
+        <div class="card">
+          <h4>Saved parcel #${id}</h4>
+          <div class="card-actions">
+            <button class="btn btn-sm btn-outline" onclick="viewParcel(${id}); showView('listings')">View</button>
+            <button class="btn btn-sm btn-muted" onclick="removeSavedParcel(${id})">Remove</button>
+          </div>
+        </div>
+      `).join('');
+    } else {
+      document.getElementById('savedResults').innerHTML = '<p class="text-muted">Save parcels while exploring to return to them here.</p>';
+    }
+  } catch (e) {
+    // Silently fail on dashboard
+  }
+}
+
+// ====================== Notaries ======================
+async function loadNotaries() {
+  const zone = document.getElementById('notaryZone').value.trim();
+  const container = document.getElementById('notariesResults');
+  showLoading('notariesResults');
+  try {
+    const data = await apiCall('/api/notaries/' + (zone ? '?zone=' + encodeURIComponent(zone) : ''));
+    if (!data || !data.length) { showEmpty('notariesResults', 'No notaries found in this zone.', 'fa-user-tie'); return; }
+    container.innerHTML = data.map(n => `
+      <div class="card">
+        <h4>${n.full_name}</h4>
+        <div class="row"><span>Zone</span><span>${n.office_zone || 'N/A'}</span></div>
+        <div class="row"><span>Phone</span><span>${n.phone_number || 'N/A'}</span></div>
+        <div class="row"><span>Email</span><span>${n.email || 'N/A'}</span></div>
+        ${n.is_verified ? '<p><span class="badge badge-active">Verified</span></p>' : '<p><span class="badge badge-pending">Pending</span></p>'}
+      </div>
+    `).join('');
+  } catch (e) {
+    showError('notariesResults', e.message, 'loadNotaries');
+  }
+}
+
+// ====================== My Listings (Seller / Notary) ======================
+let myListingsCache = [];
+
+async function loadMyListings() {
+  if (!accessToken || !currentProfile) return;
+  const container = document.getElementById('myListingsResults');
+  showLoading('myListingsResults');
+  try {
+    const data = await apiCall('/api/seller/listings/');
+    myListingsCache = data.results || data;
+    renderMyListings();
+  } catch (e) {
+    showError('myListingsResults', e.message, 'loadMyListings');
+    toast('Failed to load your listings: ' + e.message, 'error');
+  }
+}
+
+function renderMyListings() {
+  const container = document.getElementById('myListingsResults');
+  const searchTerm = document.getElementById('myListingSearch').value.trim().toLowerCase();
+  let results = myListingsCache;
+  if (searchTerm) {
+    results = results.filter(p =>
+      p.zone.toLowerCase().includes(searchTerm) ||
+      p.owner_name.toLowerCase().includes(searchTerm) ||
+      p.parcel_id.toLowerCase().includes(searchTerm)
+    );
+  }
+  if (!results || !results.length) {
+    if (searchTerm) {
+      showEmpty('myListingsResults', 'No parcels match your search.', 'fa-store');
+    } else if (currentProfile && currentProfile.role === 'seller') {
+      showEmpty('myListingsResults', 'No parcels yet. You need a notary to register land for you.', 'fa-store');
+    } else {
+      showEmpty('myListingsResults', 'No parcels found. Use the "Register Parcel" tool to add one.', 'fa-store');
+    }
+    return;
+  }
+  container.innerHTML = results.map(p => {
+    // Determine document status icons
+    const hasDeed = p.title_deed ? `<a href="${p.title_deed}" target="_blank" class="chip chip-brand" style="text-decoration:none;"><i class="fas fa-file-pdf"></i> Deed</a>` : '<span class="chip"><i class="fas fa-times"></i> No deed</span>';
+    const hasSurvey = p.survey_plan ? `<a href="${p.survey_plan}" target="_blank" class="chip chip-brand" style="text-decoration:none;"><i class="fas fa-file-pdf"></i> Survey</a>` : '<span class="chip"><i class="fas fa-times"></i> No survey</span>';
+    // Contract stats badges
+    const pendingCount = p.pending_contracts || 0;
+    const activeCount = p.active_contracts || 0;
+    const completedCount = p.completed_contracts || 0;
+    const contractBadges = [
+      pendingCount ? `<span class="badge badge-pending">${pendingCount} pending</span>` : '',
+      activeCount ? `<span class="badge badge-in_progress">${activeCount} active</span>` : '',
+      completedCount ? `<span class="badge badge-completed">${completedCount} completed</span>` : '',
+    ].filter(Boolean).join(' ') || '<span class="text-sm text-muted">No contracts</span>';
+
+    return `
+    <div class="card">
+      <div class="flex gap-2" style="align-items:start;justify-content:space-between;">
+        <h4>${p.parcel_id}</h4>
+        <span class="badge badge-${p.status}">${p.status}</span>
+      </div>
+      <div class="row"><span>Owner</span><span>${p.owner_name}</span></div>
+      <div class="row"><span>Zone</span><span>${p.zone}</span></div>
+      <div class="row"><span>Size</span><span>${p.size_sqm.toLocaleString()} m²</span></div>
+      <div class="row"><span>Sale status</span><span>${p.for_sale ? '<span class="badge badge-active">For sale</span>' : '<span class="badge badge-pending">Not listed</span>'}</span></div>
+      ${p.asking_price ? `<div class="row"><span>Price</span><span>FCFA ${Number(p.asking_price).toLocaleString()}</span></div>` : ''}
+      <div class="row"><span>Contracts</span><span>${contractBadges}</span></div>
+      <div class="row"><span>Documents</span><span class="flex gap-2" style="flex-wrap:wrap;">${hasDeed} ${hasSurvey}</span></div>
+      <div class="card-actions">
+        ${p.for_sale
+          ? `<button class="btn btn-sm btn-danger-outline" onclick="toggleListing(${p.id}, false)"><i class="fas fa-times"></i> Remove from sale</button>`
+          : `<button class="btn btn-sm btn-outline" onclick="toggleListing(${p.id}, true)"><i class="fas fa-tag"></i> Put up for sale</button>`
+        }
+        <button class="btn btn-sm btn-muted" onclick="editPrice(${p.id}, ${p.asking_price || 'null'})"><i class="fas fa-edit"></i> Price</button>
+        <button class="btn btn-sm btn-muted" onclick="uploadDocument(${p.id}, 'title_deed')"><i class="fas fa-upload"></i> Deed</button>
+        <button class="btn btn-sm btn-muted" onclick="uploadDocument(${p.id}, 'survey_plan')"><i class="fas fa-upload"></i> Survey</button>
+      </div>
+    </div>
+  `}).join('');
+}
+
+async function toggleListing(parcelId, forSale) {
+  try {
+    await apiCall('/api/seller/listings/', {
+      method: 'PATCH',
+      body: JSON.stringify({ parcel_id: parcelId, for_sale: forSale }),
+    });
+    toast(forSale ? 'Parcel listed for sale!' : 'Parcel removed from sale.', 'success');
+    loadMyListings();
+  } catch (e) {
+    toast('Failed to update listing: ' + e.message, 'error');
+  }
+}
+
+async function editPrice(parcelId, currentPrice) {
+  const priceStr = prompt('Enter asking price in FCFA:', currentPrice ? currentPrice.toString() : '');
+  if (priceStr === null) return;
+  const price = parseFloat(priceStr);
+  if (isNaN(price) || price < 0) {
+    toast('Please enter a valid price.', 'warning');
+    return;
+  }
+  try {
+    await apiCall('/api/seller/listings/', {
+      method: 'PATCH',
+      body: JSON.stringify({ parcel_id: parcelId, asking_price: price || null }),
+    });
+    toast('Price updated to FCFA ' + price.toLocaleString(), 'success');
+    loadMyListings();
+  } catch (e) {
+    toast('Failed to update price: ' + e.message, 'error');
+  }
+}
+
+// ====================== Document Upload ======================
+async function uploadDocument(parcelId, docType) {
+  const label = docType === 'title_deed' ? 'Title Deed' : 'Survey Plan';
+  // Create a hidden file input
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.pdf,.jpg,.jpeg,.png,.doc,.docx';
+  input.onchange = async function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append(docType, file);
+    try {
+      const res = await fetch('/api/parcels/' + parcelId + '/documents/', {
+        method: 'PATCH',
+        headers: { ...authHeaders() }, // no Content-Type — browser sets it for FormData
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Upload failed.');
+      toast(label + ' uploaded successfully!', 'success');
+      loadMyListings();
+    } catch (e) {
+      toast('Upload failed: ' + e.message, 'error');
+    }
+  };
+  input.click();
+}
+
+// ====================== Admin Dashboard ======================
+async function loadAdminDashboard() {
+  if (!accessToken) return;
+  try {
+    const data = await apiCall('/api/admin/dashboard/');
+    // Stats cards
+    document.getElementById('adminStats').innerHTML = `
+      <div class="stat-card stat-danger"><div class="stat-icon"><i class="fas fa-exclamation-triangle"></i></div><div class="stat-value">${data.pending_disputes}</div><div class="stat-label">Open disputes</div></div>
+      <div class="stat-card stat-warning"><div class="stat-icon"><i class="fas fa-user-clock"></i></div><div class="stat-value">${data.pending_notaries}</div><div class="stat-label">Unverified notaries</div></div>
+      <div class="stat-card"><div class="stat-icon"><i class="fas fa-fire"></i></div><div class="stat-value">${data.hotspots.length}</div><div class="stat-label">Hotspot zones</div></div>
+    `;
+    // Disputes table
+    const disputes = data.pending_disputes_list || [];
+    if (disputes.length) {
+      document.getElementById('adminDisputes').innerHTML = `<table>
+        <thead><tr><th>Parcel</th><th>Owner</th><th>Reporter</th><th>Description</th><th>Date</th></tr></thead>
+        <tbody>${disputes.map(d => `<tr>
+          <td><strong>${d.parcel_id}</strong></td>
+          <td>${d.owner_name}</td>
+          <td>${d.reporter_name}</td>
+          <td class="text-sm">${d.description}</td>
+          <td class="text-sm">${new Date(d.created_at).toLocaleDateString()}</td>
+        </tr>`).join('')}</tbody>
+      </table>`;
+    } else {
+      document.getElementById('adminDisputes').innerHTML = '<p class="text-muted text-sm">No open disputes. All clear.</p>';
+    }
+    // Hotspots table
+    const hotspots = data.hotspots || [];
+    if (hotspots.length) {
+      document.getElementById('adminHotspots').innerHTML = `<table>
+        <thead><tr><th>Zone</th><th>Total parcels</th><th>Flagged</th><th>Disputed</th></tr></thead>
+        <tbody>${hotspots.map(h => `<tr>
+          <td><strong>${h.zone}</strong></td>
+          <td>${h.total}</td>
+          <td>${h.flagged > 0 ? '<span class="badge badge-flagged">' + h.flagged + '</span>' : h.flagged}</td>
+          <td>${h.disputed > 0 ? '<span class="badge badge-disputed">' + h.disputed + '</span>' : h.disputed}</td>
+        </tr>`).join('')}</tbody>
+      </table>`;
+    } else {
+      document.getElementById('adminHotspots').innerHTML = '<p class="text-muted text-sm">No hotspot data available.</p>';
+    }
+  } catch (e) {
+    document.getElementById('adminStats').innerHTML = `<div class="error-state"><p>${e.message}</p></div>`;
+    toast('Failed to load admin dashboard: ' + e.message, 'error');
+  }
+}
+
+// ====================== Parcel Registration (Notary) ======================
+function initRegisterMap() {
+  if (typeof L === 'undefined') {
+    document.getElementById('registerMap').innerHTML = '<div class="error-state"><p>Map service could not be loaded. Please check your internet connection and refresh.</p></div>';
+    return;
+  }
+  if (registerMap) { setTimeout(() => registerMap.invalidateSize(), 50); return; }
+  registerMap = L.map('registerMap', { center: [3.86, 11.50], zoom: 13, scrollWheelZoom: true });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(registerMap);
+  registerDrawnItems = new L.FeatureGroup();
+  registerMap.addLayer(registerDrawnItems);
+  const drawControl = new L.Control.Draw({
+    edit: { featureGroup: registerDrawnItems },
+    draw: { polygon: { allowIntersection: false, showArea: true }, circle: false, circlemarker: false, rectangle: false, marker: false, polyline: false },
+  });
+  registerMap.addControl(drawControl);
+  registerMap.on(L.Draw.Event.CREATED, function(e) {
+    registerDrawnItems.clearLayers();
+    registerDrawnItems.addLayer(e.layer);
+    updateCoordDisplay();
+  });
+  registerMap.on(L.Draw.Event.EDITED, updateCoordDisplay);
+  registerMap.on(L.Draw.Event.DELETED, function() {
+    document.getElementById('coordDisplay').textContent = 'None yet — use the draw tool on the map';
+  });
+  setTimeout(() => registerMap.invalidateSize(), 100);
+}
+
+function updateCoordDisplay() {
+  const layers = registerDrawnItems.getLayers();
+  if (!layers.length) {
+    document.getElementById('coordDisplay').textContent = 'None yet — use the draw tool on the map';
+    return;
+  }
+  const poly = layers[0];
+  const latLngs = poly.getLatLngs()[0];
+  const coords = latLngs.map(ll => '[' + ll.lat.toFixed(4) + ',' + ll.lng.toFixed(4) + ']').join(', ');
+  document.getElementById('coordDisplay').innerHTML = '<code>[[' + coords + ']]</code>';
+}
+
+async function registerParcel() {
+  const btn = document.getElementById('registerParcelBtn');
+  const status = document.getElementById('registerStatus');
+  btn.disabled = true;
+  btn.textContent = 'Registering...';
+  status.className = 'auth-status';
+  status.textContent = '';
+  if (!registerDrawnItems) {
+    status.className = 'auth-status error';
+    status.textContent = 'Map not initialised. Please refresh the page and try again.';
+    toast('Map not available. Refresh and try again.', 'error');
+    btn.disabled = false;
+    btn.textContent = 'Register parcel';
+    return;
+  }
+  const layers = registerDrawnItems.getLayers();
+  if (!layers.length) {
+    status.className = 'auth-status error';
+    status.textContent = 'Please draw the parcel boundary on the map using the polygon tool.';
+    toast('Draw a boundary polygon on the map first.', 'warning');
+    btn.disabled = false;
+    btn.textContent = 'Register parcel';
+    return;
+  }
+  const poly = layers[0];
+  const latLngs = poly.getLatLngs()[0];
+  const boundary = latLngs.map(ll => [parseFloat(ll.lat.toFixed(6)), parseFloat(ll.lng.toFixed(6))]);
+  const payload = {
+    owner_name: document.getElementById('regOwnerName').value.trim(),
+    owner_phone: document.getElementById('regOwnerPhone').value.trim(),
+    zone: document.getElementById('regZone').value.trim(),
+    size_sqm: parseFloat(document.getElementById('regSize').value),
+    boundary: boundary,
+  };
+  try {
+    const data = await apiCall('/api/parcels/register/', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    if (data.conflicts && data.conflicts.length) {
+      status.className = 'auth-status warning';
+      status.innerHTML = '<i class="fas fa-exclamation-triangle" style="color:var(--warning)"></i> Overlap detected! ' + data.conflicts.length + ' conflicting parcel(s) found.';
+      toast('Overlap detected with ' + data.conflicts.length + ' existing parcels!', 'warning', 6000);
+      toast('Parcel registered with flags.', 'info');
+    } else {
+      status.className = 'auth-status success';
+      status.innerHTML = '<i class="fas fa-check-circle" style="color:var(--success)"></i> Parcel registered successfully!';
+      toast('Parcel ' + data.parcel.parcel_id + ' registered!', 'success');
+    }
+    // Show result
+    document.getElementById('registerStatus').innerHTML += '<pre class="text-sm mt-2" style="background:var(--surface-alt);padding:10px;border-radius:6px;overflow-x:auto;">' + JSON.stringify(data.parcel || data, null, 2) + '</pre>';
+    // Reset form
+    registerDrawnItems.clearLayers();
+    document.getElementById('regOwnerName').value = '';
+    document.getElementById('regOwnerPhone').value = '';
+    document.getElementById('regZone').value = '';
+    document.getElementById('regSize').value = '';
+    document.getElementById('coordDisplay').textContent = 'None yet — use the draw tool on the map';
+  } catch (e) {
+    status.className = 'auth-status error';
+    status.innerHTML = '<i class="fas fa-times-circle" style="color:var(--danger)"></i> ' + e.message;
+    toast('Registration failed: ' + e.message, 'error');
+  }
+  btn.disabled = false;
+  btn.textContent = 'Register parcel';
+}
+
+// ====================== Admin User Management ======================
+
+let adminUsersData = [];
+
+function showAdminTab(tab) {
+  ['disputes','hotspots','users','audit'].forEach(t => {
+    const el = document.getElementById('admin' + t.charAt(0).toUpperCase() + t.slice(1) + 'Tab');
+    if (el) el.classList.toggle('hidden', t !== tab);
+  });
+  ['adminTabDisputes','adminTabHotspots','adminTabUsers','adminTabAudit'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) {
+      btn.style.background = btn.id === 'adminTab' + tab.charAt(0).toUpperCase() + tab.slice(1) ? 'var(--brand)' : 'transparent';
+      btn.style.color = btn.id === 'adminTab' + tab.charAt(0).toUpperCase() + tab.slice(1) ? 'white' : 'var(--brand)';
+    }
+  });
+  if (tab === 'users') loadAdminUsers();
+}
+
+async function loadAdminUsers() {
+  const role = document.getElementById('adminUserRoleFilter').value;
+  const tbody = document.getElementById('adminUsersBody');
+  const status = document.getElementById('adminUsersStatus');
+  tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted"><div class="spinner spinner-sm"></div> Loading users...</td></tr>';
+  status.textContent = '';
+  try {
+    const data = await apiCall('/api/admin/users/' + (role ? '?role=' + role : ''));
+    adminUsersData = data.users || [];
+    if (!adminUsersData.length) {
+      tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">No users found.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = adminUsersData.map(u => `
+      <tr>
+        <td><strong>${u.username}</strong></td>
+        <td class="text-sm">${u.email || '—'}</td>
+        <td><span class="badge badge-${u.role === 'buyer' ? 'active' : u.role === 'notary' ? 'in_progress' : 'pending'}">${u.role}</span></td>
+        <td>${u.is_verified
+          ? '<span class="badge badge-active"><i class="fas fa-check-circle"></i> Verified</span>'
+          : '<span class="badge badge-pending" style="cursor:pointer;" onclick="adminVerifyUser(' + u.user_id + ', true)">Click to verify</span>'
+        }</td>
+        <td>${u.is_staff
+          ? '<span class="badge badge-active">Staff</span>'
+          : '<span class="badge badge-pending" style="cursor:pointer;" onclick="adminToggleStaff(' + u.user_id + ', true)">Make staff</span>'
+        }</td>
+        <td>${u.is_active
+          ? '<span class="badge badge-active">Active</span>'
+          : '<span class="badge badge-cancelled">Inactive</span>'
+        }</td>
+        <td class="text-sm">${new Date(u.date_joined).toLocaleDateString()}</td>
+        <td class="actions-cell">
+          <select class="btn btn-sm btn-muted" style="padding:4px 6px;font-size:.78rem;" onchange="adminChangeRole(${u.user_id}, this.value)">
+            <option value="buyer" ${u.role === 'buyer' ? 'selected' : ''}>Buyer</option>
+            <option value="seller" ${u.role === 'seller' ? 'selected' : ''}>Seller</option>
+            <option value="notary" ${u.role === 'notary' ? 'selected' : ''}>Notary</option>
+          </select>
+          ${!u.is_active
+            ? '<button class="btn btn-sm btn-outline" onclick="adminActivateUser(' + u.user_id + ', true)"><i class="fas fa-undo"></i></button>'
+            : ''
+          }
+          ${u.username !== (currentProfile ? currentProfile.username : '')
+            ? '<button class="btn btn-sm btn-danger-outline" onclick="adminDeleteUser(' + u.user_id + ', \'' + u.username + '\')"><i class="fas fa-trash"></i></button>'
+            : ''
+          }
+        </td>
+      </tr>
+    `).join('');
+    status.textContent = adminUsersData.length + ' user(s) loaded.';
+  } catch (e) {
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">' + e.message + '</td></tr>';
+    status.textContent = 'Error loading users.';
+    toast('Failed to load users: ' + e.message, 'error');
+  }
+}
+
+async function adminChangeRole(userId, newRole) {
+  try {
+    await apiCall('/api/admin/users/' + userId + '/', { method: 'PATCH', body: JSON.stringify({ role: newRole }) });
+    toast('Role updated to ' + newRole + '.', 'success');
+    loadAdminUsers();
+  } catch (e) {
+    toast('Failed to update role: ' + e.message, 'error');
+  }
+}
+
+async function adminVerifyUser(userId, verified) {
+  try {
+    await apiCall('/api/admin/users/' + userId + '/', { method: 'PATCH', body: JSON.stringify({ is_verified: verified }) });
+    toast('User verification status updated.', 'success');
+    loadAdminUsers();
+  } catch (e) {
+    toast('Failed to update verification: ' + e.message, 'error');
+  }
+}
+
+async function adminToggleStaff(userId, staff) {
+  try {
+    await apiCall('/api/admin/users/' + userId + '/', { method: 'PATCH', body: JSON.stringify({ is_staff: staff }) });
+    toast('Staff status updated.', 'success');
+    loadAdminUsers();
+  } catch (e) {
+    toast('Failed to update staff status: ' + e.message, 'error');
+  }
+}
+
+async function adminActivateUser(userId, active) {
+  try {
+    await apiCall('/api/admin/users/' + userId + '/', { method: 'PATCH', body: JSON.stringify({ is_active: active }) });
+    toast('User activated.', 'success');
+    loadAdminUsers();
+  } catch (e) {
+    toast('Failed to activate user: ' + e.message, 'error');
+  }
+}
+
+async function adminDeleteUser(userId, username) {
+  if (!confirm('Are you sure you want to delete user "' + username + '"? This cannot be undone.')) return;
+  try {
+    await apiCall('/api/admin/users/' + userId + '/', { method: 'DELETE' });
+    toast('User "' + username + '" deleted.', 'success');
+    loadAdminUsers();
+    loadAdminDashboard();
+  } catch (e) {
+    toast('Failed to delete user: ' + e.message, 'error');
+  }
+}
+
+async function loadAdminAudit() {
+  const container = document.getElementById('adminAuditResults');
+  container.innerHTML = '<div class="loading-wrap"><div class="spinner"></div><span>Loading audit chain...</span></div>';
+  try {
+    const data = await apiCall('/api/audit/chain/');
+    const validation = data.validation || {};
+    const blocks = data.blocks || [];
+    let html = `<div class="stats-grid mb-3">
+      <div class="stat-card ${validation.valid ? '' : 'stat-danger'}"><div class="stat-value">${validation.valid ? '<i class="fas fa-check-circle" style="color:var(--success)"></i>' : '<i class="fas fa-times-circle" style="color:var(--danger)"></i>'}</div><div class="stat-label">Chain ${validation.valid ? 'Valid' : 'Invalid'}</div></div>
+      <div class="stat-card"><div class="stat-value">${blocks.length}</div><div class="stat-label">Blocks</div></div>
+      <div class="stat-card"><div class="stat-value">${validation.latest_hash ? validation.latest_hash.substring(0,10) + '...' : 'N/A'}</div><div class="stat-label">Latest hash</div></div>
+    </div>`;
+    if (blocks.length) {
+      html += '<div class="table-wrap"><table><thead><tr><th>#</th><th>Event</th><th>Timestamp</th><th>Hash (first 12)</th></tr></thead><tbody>';
+      html += blocks.slice().reverse().map(b => `<tr>
+        <td>${b.index}</td>
+        <td><span class="chip chip-brand">${b.event_type}</span></td>
+        <td class="text-sm">${new Date(b.timestamp).toLocaleString()}</td>
+        <td class="text-sm" style="font-family:monospace;font-size:.75rem;">${b.hash.substring(0,12)}...</td>
+      </tr>`).join('');
+      html += '</tbody></table></div>';
+    } else {
+      html += '<p class="text-muted">No audit blocks recorded yet.</p>';
+    }
+    container.innerHTML = html;
+  } catch (e) {
+    container.innerHTML = '<div class="error-state"><p>' + e.message + '</p></div>';
+  }
+}
+
+async function validateAdminAudit() {
+  const container = document.getElementById('adminAuditResults');
+  container.innerHTML = '<div class="loading-wrap"><div class="spinner"></div><span>Validating chain...</span></div>';
+  try {
+    const data = await apiCall('/api/audit/validate/');
+    if (data.valid) {
+      container.innerHTML = `<div class="stats-grid"><div class="stat-card"><div class="stat-value" style="color:var(--success)"><i class="fas fa-check-circle"></i></div><div class="stat-label">Chain is VALID (${data.length} blocks)</div></div></div>`;
+      toast('Audit chain is valid!', 'success');
+    } else {
+      container.innerHTML = `<div class="stats-grid"><div class="stat-card stat-danger"><div class="stat-value"><i class="fas fa-times-circle"></i></div><div class="stat-label">Chain INVALID at block ${data.invalid_block}</div></div></div>`;
+      toast('Audit chain validation FAILED!', 'error', 8000);
+    }
+  } catch (e) {
+    container.innerHTML = '<div class="error-state"><p>' + e.message + '</p></div>';
+  }
+}
+
+// ====================== View Initialization Hooks ======================
+const _origShowView = showView;
+showView = function(name) {
+  _origShowView(name);
+  if (name === 'contracts') loadContracts();
+  if (name === 'notaries') loadNotaries();
+  closeSidebarOnMobile();
+};
+</script>
+</body>
+</html>
